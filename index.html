@@ -177,6 +177,7 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 <script>
 var WA_NUMBER = "221779515790";
 var RIGS = ["DR218","DR219","DR220","DR221","DR222","DR223","DR224","DR225","DR226","DR227","DR228","DR229","DR230","DR231"];
+var TECHS = ["Abdoulaye Ndiaye","Abou Ba","Adama Yague","Babacar Badara Diop","Bailo Kante","Bernard Ngom Sene","Boye Diallo","Chams Edine Dieng","Cheikh Niang","Dandiala Cissokho","Daouda Sene","Djiby Camara","Edouard Coly","Fatou Bintou","Gora Fall","Ibrahima Diallo","Ibrahima Kane","Ibrahima Ndiaye","Idrissa Dagnakho","Idy Diouf","Ismaila Mbaye","Mamadou Cisse","Mamadou Diop","Mamor Fall Dembele","Matar Bary","Mbaye Seck Diaw","Modou A B Seck","Mory Moussa Danfakha","Moussa Diop","Moussa Gueye","Ndiaga Ngom","Ousmane Toure","Paul Gabriel","Pierre Louis Diouf","Samba Ngom","Sambou Cissokho","Saydou Diallo","Serigne Cisse","Sidiya Dabo","Youssou Faye","Youssoupha Lo"];
 
 var DB;
 try { DB = JSON.parse(localStorage.getItem("gmao_v3") || "[]"); if(!Array.isArray(DB)) DB = []; } catch(e){ DB = []; }
@@ -217,9 +218,45 @@ function addPanne(data){
   body.appendChild(fieldTime("Fin","p-e",data.end));
   body.appendChild(fieldInput("Failure","p-f","ex: Engine off",data.failure));
   body.appendChild(fieldInput("Action","p-a","ex: Fuel shut off valve replaced",data.action));
-  body.appendChild(fieldInput("Technicien(s)","p-t","",data.techs));
+  body.appendChild(fieldTechs(data.techs));
   d.appendChild(head); d.appendChild(body);
   list.appendChild(d);
+}
+function fieldTechs(val){
+  var f=document.createElement("div"); f.className="field";
+  var l=document.createElement("label"); l.textContent="Technicien(s)";
+  // container for selected tags
+  var tags=document.createElement("div"); tags.className="tech-tags"; tags.style.cssText="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;";
+  // dropdown to pick
+  var sel=document.createElement("select");
+  sel.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;margin-bottom:6px;";
+  var o0=document.createElement("option"); o0.value=""; o0.textContent="-- Choisir un technicien --"; sel.appendChild(o0);
+  for(var i=0;i<TECHS.length;i++){ var o=document.createElement("option"); o.value=TECHS[i]; o.textContent=TECHS[i]; sel.appendChild(o); }
+  // free text input to add a name not in list
+  var free=document.createElement("input"); free.type="text"; free.placeholder="ou tape un autre nom";
+  free.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;margin-bottom:6px;";
+  function addTag(name){
+    if(!name) return;
+    var tag=document.createElement("span");
+    tag.className="tech-tag";
+    tag.style.cssText="display:inline-flex;align-items:center;gap:6px;background:rgba(34,201,122,0.15);color:var(--green);border:1px solid rgba(34,201,122,0.3);border-radius:20px;padding:6px 12px;font-size:13px;font-weight:600;";
+    tag.setAttribute("data-name",name);
+    var tx=document.createElement("span"); tx.textContent=name;
+    var x=document.createElement("button"); x.textContent="\u2715"; x.style.cssText="background:none;border:none;color:var(--green);cursor:pointer;font-size:14px;padding:0;";
+    x.onclick=function(){ tag.remove(); };
+    tag.appendChild(tx); tag.appendChild(x);
+    tags.appendChild(tag);
+  }
+  sel.onchange=function(){ if(this.value){ addTag(this.value); this.value=""; } };
+  free.onkeypress=function(ev){ if(ev.key==="Enter"){ ev.preventDefault(); addTag(free.value.trim()); free.value=""; } };
+  var addBtn=document.createElement("button");
+  addBtn.textContent="+ Ajouter ce nom"; addBtn.className="btn btn-ghost btn-sm";
+  addBtn.style.cssText="margin:0;";
+  addBtn.onclick=function(){ addTag(free.value.trim()); free.value=""; };
+  // pre-fill if editing
+  if(val){ var arr=val.split(",");for(var k=0;k<arr.length;k++){ if(arr[k].trim()) addTag(arr[k].trim()); } }
+  f.appendChild(l); f.appendChild(tags); f.appendChild(sel); f.appendChild(free); f.appendChild(addBtn);
+  return f;
 }
 function fieldInput(label,cls,ph,val){
   var f=document.createElement("div"); f.className="field";
@@ -245,7 +282,10 @@ function getPanne(){
     var s=c.querySelector(".p-s").value, e=c.querySelector(".p-e").value;
     var dur=0;
     if(s&&e){ var a=s.split(":"),b=e.split(":"); dur=(b[0]*60+ +b[1])-(a[0]*60+ +a[1]); if(dur<0)dur+=1440; }
-    out.push({machine:m,start:s,end:e,failure:c.querySelector(".p-f").value.trim(),action:c.querySelector(".p-a").value.trim(),techs:c.querySelector(".p-t").value.trim(),dur:dur});
+    var techTags=c.querySelectorAll(".tech-tag");
+    var techNames=[];
+    for(var k=0;k<techTags.length;k++){ techNames.push(techTags[k].getAttribute("data-name")); }
+    out.push({machine:m,start:s,end:e,failure:c.querySelector(".p-f").value.trim(),action:c.querySelector(".p-a").value.trim(),techs:techNames.join(", "),dur:dur});
   }
   return out;
 }
