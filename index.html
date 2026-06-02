@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+
+<html lang="en" translate="no" class="notranslate">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google" content="notranslate">
+<title>GMAO Endeavour Mining</title>
+<style>
+:root{
+  --bg:#080f0c;--surface:#0f1a16;--surface2:#162219;--surface3:#1c2e24;
+  --border:#253d30;--border2:#2e4d3c;--green:#22c97a;--amber:#f0a832;
+  --red:#f04848;--blue:#38b6ff;--wa:#25D366;--wa2:#128C7E;
+  --text:#e8f2ec;--text2:#9ab8a8;--text3:#5a7868;--card:#101a15;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);font-family:-apple-system,system-ui,sans-serif;color:var(--text);padding-bottom:80px;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;}
+.tb-logo{width:32px;height:32px;border:1.5px solid var(--amber);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.tb-name{font-size:14px;font-weight:800;color:var(--amber);letter-spacing:1px;}
+.tb-sub{font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;}
+.main{padding:16px;}
+.view{display:none;}
+.view.active{display:block;}
+.page-title{font-size:20px;font-weight:800;margin-bottom:16px;}
+.page-title span{color:var(--green);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+.card-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.card-title{font-size:13px;font-weight:700;}
+.card-body{padding:14px;}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.field label{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
+.field input,.field select{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--green);}
+input[type="time"],input[type="date"]{color-scheme:dark;}
+.btn{display:block;width:100%;text-align:center;padding:14px;border-radius:8px;font-size:15px;font-weight:700;border:none;cursor:pointer;margin-bottom:10px;}
+.btn-green{background:var(--green);color:#000;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.btn-sm{padding:8px 14px;font-size:13px;width:auto;display:inline-block;margin:0;}
+.btn-wa{background:var(--wa);color:#fff;}
+.btn-wa2{background:var(--wa2);color:#fff;}
+.btn-red{background:rgba(240,72,72,0.15);color:var(--red);}
+.mb-card{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.mb-head{background:var(--surface3);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.mb-title{font-size:14px;font-weight:800;color:var(--green);}
+.mb-body{padding:12px 14px;}
+.rm{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px 8px;}
+.empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:12px;}
+.empty .ei{font-size:38px;margin-bottom:10px;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);height:64px;display:grid;grid-template-columns:repeat(4,1fr);z-index:200;}
+.bn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--text3);cursor:pointer;}
+.bn.active{color:var(--green);}
+.bn-ic{font-size:21px;}
+.bn-lb{font-size:8px;letter-spacing:0.5px;text-transform:uppercase;}
+.wa-box{background:rgba(37,211,102,0.06);border:1px solid rgba(37,211,102,0.2);border-radius:10px;padding:14px;margin-bottom:14px;}
+.wa-box-t{font-size:13px;font-weight:700;color:var(--wa);margin-bottom:10px;}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:9999;}
+.toast.show{opacity:1;}
+#doc{background:#fdf6e9;border:2px solid #d9c9a8;border-radius:12px;padding:18px;color:#14100a;overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-logo">&#9881;</div>
+  <div>
+    <div class="tb-name">ENDEAVOUR MINING</div>
+    <div class="tb-sub" id="sub">GMAO Maintenance</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- BREAKDOWN -->
+
+  <div class="view active" id="v-panne">
+    <div class="page-title">Rapport <span>de Panne</span></div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Informations du shift</div></div>
+      <div class="card-body">
+        <div class="field"><label>Shift</label><select id="p-shift"><option>Night</option><option>Day</option></select></div>
+        <div class="field"><label>Date</label><input type="date" id="p-date"></div>
+        <div class="field"><label>Leading Hand</label><input type="text" id="p-lead" placeholder="ex: Gora Fall"></div>
+        <div class="field"><label>Supervisor</label><input type="text" id="p-sup" placeholder="ex: Mory Danfakha"></div>
+        <div class="field"><label>Site Supervisor</label><input type="text" id="p-site" placeholder="ex: Samba Ngom"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Pannes</div><button class="btn btn-green btn-sm" onclick="addPanne()">+ Ajouter</button></div>
+      <div class="card-body"><div id="panne-list"></div></div>
+    </div>
+    <button class="btn btn-amber" onclick="genPanne()">Generer le rapport</button>
+    <button class="btn btn-ghost" onclick="clearPanne()">Effacer</button>
+
+```
+<div id="panne-out" style="display:none;margin-top:14px;">
+  <div class="wa-box">
+    <div class="wa-box-t">Partager le rapport</div>
+    <button class="btn btn-wa" onclick="sharePDF('doc-p','Rapport_Panne')">Partager PDF</button>
+    <button class="btn btn-wa2" onclick="waText('p')">Envoyer resume WhatsApp</button>
+    <button class="btn btn-ghost" onclick="dlPDF('doc-p','Rapport_Panne')">Telecharger PDF</button>
+  </div>
+  <div id="doc-p"></div>
+</div>
+```
+
+  </div>
+
+  <!-- DAILY -->
+
+  <div class="view" id="v-daily">
+    <div class="page-title">Daily <span>Service</span></div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Informations</div></div>
+      <div class="card-body">
+        <div class="field"><label>Date</label><input type="date" id="d-date"></div>
+        <div class="field"><label>Location</label><input type="text" id="d-loc" placeholder="ex: Pit 3"></div>
+        <div class="field"><label>Shift</label><select id="d-shift"><option>Day</option><option>Night</option></select></div>
+        <div class="field"><label>Daily Service Leading Hand</label><input type="text" id="d-lead" placeholder="ex: Gora Fall"></div>
+        <div class="field"><label>Pit Maint Forman</label><input type="text" id="d-forman" placeholder="ex: Mory Danfakha"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Machines</div><button class="btn btn-green btn-sm" onclick="addDaily()">+ Ajouter machine</button></div>
+      <div class="card-body"><div id="daily-list"></div></div>
+    </div>
+    <button class="btn btn-amber" onclick="genDaily()">Generer le document</button>
+    <button class="btn btn-ghost" onclick="clearDaily()">Reinitialiser</button>
+
+```
+<div id="daily-out" style="display:none;margin-top:14px;">
+  <div class="wa-box">
+    <div class="wa-box-t">Partager le document</div>
+    <button class="btn btn-wa" onclick="sharePDF('doc-d','Daily_Service')">Partager PDF</button>
+    <button class="btn btn-wa2" onclick="waText('d')">Envoyer resume WhatsApp</button>
+    <button class="btn btn-ghost" onclick="dlPDF('doc-d','Daily_Service')">Telecharger PDF</button>
+  </div>
+  <div id="doc-d"></div>
+</div>
+```
+
+  </div>
+
+  <!-- HISTORY -->
+
+  <div class="view" id="v-hist">
+    <div class="page-title">Historique</div>
+    <div class="card"><div class="card-body" id="hist-body"><div class="empty"><div class="ei">&#128193;</div>Aucune donnee enregistree</div></div></div>
+    <button class="btn btn-red" onclick="clearHist()">Vider l historique</button>
+  </div>
+
+  <!-- INFO -->
+
+  <div class="view" id="v-info">
+    <div class="page-title">Aide</div>
+    <div class="card"><div class="card-body" style="font-size:13px;line-height:1.7;color:var(--text2);">
+      <p style="margin-bottom:10px;"><b style="color:var(--green);">Rapport de Panne :</b> remplis le shift, ajoute les pannes, puis Generer le rapport. Partage en PDF sur WhatsApp.</p>
+      <p style="margin-bottom:10px;"><b style="color:var(--green);">Daily Service :</b> ajoute les machines faites, choisis le type, puis Generer le document.</p>
+      <p><b style="color:var(--amber);">Note :</b> les donnees sont stockees sur ton telephone uniquement.</p>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="bottom-nav">
+  <button class="bn active" id="bn-panne" onclick="nav('panne')"><span class="bn-ic">&#128221;</span><span class="bn-lb">Panne</span></button>
+  <button class="bn" id="bn-daily" onclick="nav('daily')"><span class="bn-ic">&#128203;</span><span class="bn-lb">Daily</span></button>
+  <button class="bn" id="bn-hist" onclick="nav('hist')"><span class="bn-ic">&#128451;</span><span class="bn-lb">Historique</span></button>
+  <button class="bn" id="bn-info" onclick="nav('info')"><span class="bn-ic">&#8505;</span><span class="bn-lb">Aide</span></button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" async></script>
+
+<script>
+var WA_NUMBER = "221779515790";
+var RIGS = ["DR218","DR219","DR220","DR221","DR222","DR223","DR224","DR225","DR226","DR227","DR228","DR229","DR230","DR231"];
+
+var DB;
+try { DB = JSON.parse(localStorage.getItem("gmao_v3") || "[]"); if(!Array.isArray(DB)) DB = []; } catch(e){ DB = []; }
+function saveDB(){ try{ localStorage.setItem("gmao_v3", JSON.stringify(DB)); }catch(e){} }
+
+function toast(m){ var t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},2500); }
+
+function nav(v){
+  var views=document.querySelectorAll(".view");
+  for(var i=0;i<views.length;i++) views[i].classList.remove("active");
+  document.getElementById("v-"+v).classList.add("active");
+  var bns=document.querySelectorAll(".bn");
+  for(var j=0;j<bns.length;j++) bns[j].classList.remove("active");
+  document.getElementById("bn-"+v).classList.add("active");
+  if(v==="hist") renderHist();
+  window.scrollTo(0,0);
+}
+
+function fmtDate(d){ if(!d) return "-"; var x=new Date(d+"T12:00:00"); return x.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}); }
+
+/* ===== BREAKDOWN ===== */
+var pCount=0;
+function addPanne(data){
+  data=data||{};
+  pCount++;
+  var id=pCount;
+  var list=document.getElementById("panne-list");
+  var d=document.createElement("div");
+  d.className="mb-card";
+  var head=document.createElement("div");
+  head.className="mb-head";
+  var t=document.createElement("div"); t.className="mb-title"; t.textContent="Panne "+id;
+  var rm=document.createElement("button"); rm.className="rm"; rm.textContent="\u2715"; rm.onclick=function(){ d.remove(); };
+  head.appendChild(t); head.appendChild(rm);
+  var body=document.createElement("div"); body.className="mb-body";
+  body.appendChild(fieldInput("Machine","p-m","ex: DR227",data.machine));
+  body.appendChild(fieldTime("Debut","p-s",data.start));
+  body.appendChild(fieldTime("Fin","p-e",data.end));
+  body.appendChild(fieldInput("Failure","p-f","ex: Engine off",data.failure));
+  body.appendChild(fieldInput("Action","p-a","ex: Fuel shut off valve replaced",data.action));
+  body.appendChild(fieldInput("Technicien(s)","p-t","",data.techs));
+  d.appendChild(head); d.appendChild(body);
+  list.appendChild(d);
+}
+function fieldInput(label,cls,ph,val){
+  var f=document.createElement("div"); f.className="field";
+  var l=document.createElement("label"); l.textContent=label;
+  var i=document.createElement("input"); i.type="text"; i.className=cls; i.placeholder=ph; if(val) i.value=val;
+  f.appendChild(l); f.appendChild(i); return f;
+}
+function fieldTime(label,cls,val){
+  var f=document.createElement("div"); f.className="field";
+  var l=document.createElement("label"); l.textContent=label;
+  var i=document.createElement("input"); i.type="time"; i.className=cls; if(val) i.value=val;
+  f.appendChild(l); f.appendChild(i); return f;
+}
+function clearPanne(){ if(confirm("Effacer toutes les pannes ?")){ document.getElementById("panne-list").innerHTML=""; pCount=0; } }
+
+function getPanne(){
+  var cards=document.getElementById("panne-list").children;
+  var out=[];
+  for(var i=0;i<cards.length;i++){
+    var c=cards[i];
+    var m=c.querySelector(".p-m").value.trim();
+    if(!m) continue;
+    var s=c.querySelector(".p-s").value, e=c.querySelector(".p-e").value;
+    var dur=0;
+    if(s&&e){ var a=s.split(":"),b=e.split(":"); dur=(b[0]*60+ +b[1])-(a[0]*60+ +a[1]); if(dur<0)dur+=1440; }
+    out.push({machine:m,start:s,end:e,failure:c.querySelector(".p-f").value.trim(),action:c.querySelector(".p-a").value.trim(),techs:c.querySelector(".p-t").value.trim(),dur:dur});
+  }
+  return out;
+}
+
+var lastPanne=null;
+function genPanne(){
+  var rows=getPanne();
+  if(!rows.length){ toast("Ajoute au moins une panne"); return; }
+  var meta={shift:document.getElementById("p-shift").value,date:document.getElementById("p-date").value,
+    lead:document.getElementById("p-lead").value||"-",sup:document.getElementById("p-sup").value||"-",site:document.getElementById("p-site").value||"-"};
+  lastPanne={rows:rows,meta:meta};
+  DB.push({type:"Panne",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
+  saveDB();
+
+  var tr="";
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    tr+='<tr><td style="border:1px solid #9a8a64;padding:7px;text-align:center;font-weight:700;background:#f7f0e0;">'+r.machine+'</td>'+
+    '<td style="border:1px solid #9a8a64;padding:7px;text-align:center;">'+(r.start||"-")+'</td>'+
+    '<td style="border:1px solid #9a8a64;padding:7px;text-align:center;">'+(r.end||"-")+'</td>'+
+    '<td style="border:1px solid #9a8a64;padding:7px;color:#6a1408;font-weight:700;">'+(r.failure||"-")+'</td>'+
+    '<td style="border:1px solid #9a8a64;padding:7px;">'+(r.action||"-")+'</td></tr>';
+    if(r.techs) tr+='<tr><td style="border:1px solid #9a8a64;padding:5px 7px;font-size:11px;background:#e8dec6;">Tech</td><td colspan="4" style="border:1px solid #9a8a64;padding:5px 7px;font-size:12px;background:#f1e8d2;font-weight:700;">'+r.techs+'</td></tr>';
+  }
+  document.getElementById("doc-p").innerHTML=
+    '<h2 style="text-align:center;font-size:18px;color:#2b3a4a;margin-bottom:10px;">MACHINE BREAKDOWN REPORT</h2>'+
+    '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>Shift:</b> '+meta.shift+' &nbsp; <b>Date:</b> '+fmtDate(meta.date)+' &nbsp; <b>Leading Hand:</b> '+meta.lead+'</div>'+
+    '<table style="width:100%;border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;">'+
+    '<thead><tr style="background:#7d8d9b;color:#0c1419;font-size:11px;"><th style="border:1px solid #5a6876;padding:6px;">Machine</th><th style="border:1px solid #5a6876;padding:6px;">Start</th><th style="border:1px solid #5a6876;padding:6px;">End</th><th style="border:1px solid #5a6876;padding:6px;">Failure</th><th style="border:1px solid #5a6876;padding:6px;">Action</th></tr></thead>'+
+    '<tbody>'+tr+'</tbody></table>'+
+    '<div style="font-size:12px;color:#3a2c12;"><b>Supervisor:</b> '+meta.sup+'</div>'+
+    '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Site Supervisor:</b> '+meta.site+'</div>'+
+    '<div style="text-align:center;margin-top:14px;font-size:16px;font-weight:800;letter-spacing:2px;color:#6e7a86;">ENDEAVOUR MINING</div>';
+  document.getElementById("panne-out").style.display="block";
+  document.getElementById("panne-out").scrollIntoView({behavior:"smooth"});
+  toast("Rapport genere");
+}
+
+/* ===== DAILY ===== */
+var dCount=0;
+function addDaily(data){
+  data=data||{};
+  dCount++;
+  var list=document.getElementById("daily-list");
+  var d=document.createElement("div");
+  d.className="mb-card";
+  var head=document.createElement("div"); head.className="mb-head";
+  var t=document.createElement("div"); t.className="mb-title"; t.textContent=data.rig||"Choisir machine";
+  var rm=document.createElement("button"); rm.className="rm"; rm.textContent="\u2715"; rm.onclick=function(){ d.remove(); };
+  head.appendChild(t); head.appendChild(rm);
+  var body=document.createElement("div"); body.className="mb-body";
+  // machine select
+  var fM=document.createElement("div"); fM.className="field";
+  var lM=document.createElement("label"); lM.textContent="Machine";
+  var sM=document.createElement("select"); sM.className="d-rig";
+  var o0=document.createElement("option"); o0.value=""; o0.textContent="-- Choisir --"; sM.appendChild(o0);
+  for(var i=0;i<RIGS.length;i++){ var o=document.createElement("option"); o.value=RIGS[i]; o.textContent=RIGS[i]; if(data.rig===RIGS[i])o.selected=true; sM.appendChild(o); }
+  sM.onchange=function(){ t.textContent=this.value||"Choisir machine"; };
+  fM.appendChild(lM); fM.appendChild(sM);
+  body.appendChild(fM);
+  body.appendChild(fieldTime("Begin","d-b",data.begin));
+  body.appendChild(fieldTime("End","d-e",data.end));
+  // type select
+  var fT=document.createElement("div"); fT.className="field";
+  var lT=document.createElement("label"); lT.textContent="Type de service";
+  var sT=document.createElement("select"); sT.className="d-type";
+  var types=["","Daily Service","Opportunity Time"];
+  for(var k=0;k<types.length;k++){ var ot=document.createElement("option"); ot.value=types[k]; ot.textContent=types[k]||"-- Choisir --"; if(data.type===types[k])ot.selected=true; sT.appendChild(ot); }
+  fT.appendChild(lT); fT.appendChild(sT);
+  body.appendChild(fT);
+  d.appendChild(head); d.appendChild(body);
+  list.appendChild(d);
+}
+function clearDaily(){ if(confirm("Reinitialiser ?")){ document.getElementById("daily-list").innerHTML=""; dCount=0; document.getElementById("daily-out").style.display="none"; } }
+
+function getDaily(){
+  var cards=document.getElementById("daily-list").children;
+  var out=[];
+  for(var i=0;i<cards.length;i++){
+    var c=cards[i];
+    var rig=c.querySelector(".d-rig").value;
+    if(!rig) continue;
+    out.push({rig:rig,begin:c.querySelector(".d-b").value,end:c.querySelector(".d-e").value,type:c.querySelector(".d-type").value});
+  }
+  return out;
+}
+
+var lastDaily=null;
+function genDaily(){
+  var rows=getDaily();
+  if(!rows.length){ toast("Ajoute au moins une machine"); return; }
+  var meta={date:document.getElementById("d-date").value,loc:document.getElementById("d-loc").value||"-",
+    shift:document.getElementById("d-shift").value,lead:document.getElementById("d-lead").value||"-",forman:document.getElementById("d-forman").value||"-"};
+  lastDaily={rows:rows,meta:meta};
+  DB.push({type:"Daily",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
+  saveDB();
+
+  var tr="";
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    tr+='<tr><td style="border:1px solid #9a8a64;padding:7px;text-align:center;font-weight:700;background:#f7f0e0;">'+r.rig+'</td>'+
+    '<td style="border:1px solid #9a8a64;padding:7px;text-align:center;">'+(r.begin||"-")+'</td>'+
+    '<td style="border:1px solid #9a8a64;padding:7px;text-align:center;">'+(r.end||"-")+'</td>'+
+    '<td style="border:1px solid #9a8a64;padding:7px;">'+(r.type||"-")+'</td></tr>';
+  }
+  document.getElementById("doc-d").innerHTML=
+    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">ENDEAVOUR MINING</div>'+
+    '<h2 style="text-align:center;font-size:15px;color:#2b3a4a;margin-bottom:10px;">Daily Drilling Maintenance Reporting</h2>'+
+    '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>Location:</b> '+meta.loc+' &nbsp; <b>Date:</b> '+fmtDate(meta.date)+' &nbsp; <b>Shift:</b> '+meta.shift+'</div>'+
+    '<table style="width:100%;border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;">'+
+    '<thead><tr style="background:#7d8d9b;color:#0c1419;font-size:11px;"><th style="border:1px solid #5a6876;padding:6px;">Rig</th><th style="border:1px solid #5a6876;padding:6px;">Begin</th><th style="border:1px solid #5a6876;padding:6px;">End</th><th style="border:1px solid #5a6876;padding:6px;">Type</th></tr></thead>'+
+    '<tbody>'+tr+'</tbody></table>'+
+    '<div style="font-size:12px;color:#3a2c12;"><b>Daily Service Leading Hand:</b> '+meta.lead+'</div>'+
+    '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Pit Maint Forman:</b> '+meta.forman+'</div>';
+  document.getElementById("daily-out").style.display="block";
+  document.getElementById("daily-out").scrollIntoView({behavior:"smooth"});
+  toast("Document genere");
+}
+
+/* ===== WHATSAPP TEXT ===== */
+function waText(which){
+  var NL=String.fromCharCode(10);
+  var msg="";
+  if(which==="p"){
+    if(!lastPanne){ toast("Genere le rapport dabord"); return; }
+    var m=lastPanne.meta, rows=lastPanne.rows;
+    msg="*MACHINE BREAKDOWN REPORT*"+NL+"*Endeavour Mining*"+NL+"----------"+NL;
+    msg+="Shift: "+m.shift+NL+"Date: "+fmtDate(m.date)+NL+"Leading Hand: "+m.lead+NL+"----------"+NL;
+    for(var i=0;i<rows.length;i++){ var r=rows[i];
+      msg+=NL+"*"+r.machine+"*"+NL+"Time: "+(r.start||"-")+" - "+(r.end||"-")+NL+"Failure: "+(r.failure||"-")+NL+"Action: "+(r.action||"-")+NL;
+      if(r.techs) msg+="Tech: "+r.techs+NL;
+    }
+    msg+="----------"+NL+"Supervisor: "+m.sup;
+  } else {
+    if(!lastDaily){ toast("Genere le document dabord"); return; }
+    var dm=lastDaily.meta, dr=lastDaily.rows;
+    msg="*DAILY DRILLING MAINTENANCE*"+NL+"*Endeavour Mining*"+NL+"----------"+NL;
+    msg+="Date: "+fmtDate(dm.date)+NL+"Location: "+dm.loc+NL+"Shift: "+dm.shift+NL+"----------"+NL;
+    for(var j=0;j<dr.length;j++){ var x=dr[j];
+      msg+=NL+"*"+x.rig+"*"+NL+"Begin: "+(x.begin||"-")+" End: "+(x.end||"-")+NL+"Type: "+(x.type||"-")+NL;
+    }
+    msg+="----------"+NL+"Leading Hand: "+dm.lead;
+  }
+  window.open("https://wa.me/"+WA_NUMBER+"?text="+encodeURIComponent(msg),"_blank");
+}
+
+/* ===== PDF ===== */
+function sharePDF(elId,name){
+  var el=document.getElementById(elId);
+  if(!el||!el.innerHTML.trim()){ toast("Genere le document dabord"); return; }
+  if(typeof html2pdf==="undefined"){ toast("Patiente, chargement..."); return; }
+  toast("Preparation du PDF...");
+  var opt={margin:8,image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,backgroundColor:"#fdf6e9"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}};
+  html2pdf().set(opt).from(el).outputPdf("blob").then(function(blob){
+    var file=new File([blob],name+".pdf",{type:"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:name}).then(function(){toast("Partage");}).catch(function(){});
+    } else {
+      var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download=name+".pdf";a.click();
+      toast("PDF telecharge");
+    }
+  }).catch(function(){ toast("Erreur PDF"); });
+}
+function dlPDF(elId,name){
+  var el=document.getElementById(elId);
+  if(!el||!el.innerHTML.trim()){ toast("Genere le document dabord"); return; }
+  if(typeof html2pdf==="undefined"){ toast("Patiente, chargement..."); return; }
+  toast("Generation du PDF...");
+  var opt={margin:8,filename:name+".pdf",image:{type:"jpeg",quality:0.98},html2canvas:{scale:2,backgroundColor:"#fdf6e9"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}};
+  html2pdf().set(opt).from(el).save().then(function(){toast("PDF telecharge");}).catch(function(){toast("Erreur PDF");});
+}
+
+/* ===== HISTORY ===== */
+function renderHist(){
+  var b=document.getElementById("hist-body");
+  if(!DB.length){ b.innerHTML='<div class="empty"><div class="ei">&#128193;</div>Aucune donnee enregistree</div>'; return; }
+  var h="";
+  for(var i=DB.length-1;i>=0;i--){
+    var d=DB[i];
+    h+='<div style="border-bottom:1px solid var(--border);padding:10px 0;">'+
+    '<div style="font-weight:700;color:var(--green);">'+d.type+' - '+fmtDate(d.date)+'</div>'+
+    '<div style="font-size:12px;color:var(--text3);">Shift '+d.shift+' - '+d.count+' machine(s)</div></div>';
+  }
+  b.innerHTML=h;
+}
+function clearHist(){ if(confirm("Vider tout lhistorique ?")){ DB=[]; saveDB(); renderHist(); toast("Historique vide"); } }
+
+/* ===== INIT ===== */
+try{ document.getElementById("p-date").valueAsDate=new Date(); }catch(e){}
+try{ document.getElementById("d-date").valueAsDate=new Date(); }catch(e){}
+addPanne();
+addDaily();
+document.getElementById("sub").textContent="GMAO Pret";
+</script>
+
+</body>
+</html>
