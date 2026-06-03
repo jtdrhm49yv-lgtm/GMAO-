@@ -51,11 +51,11 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 .rm{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px 8px;}
 .empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:12px;}
 .empty .ei{font-size:38px;margin-bottom:10px;}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);height:64px;display:grid;grid-template-columns:repeat(6,1fr);z-index:200;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);height:64px;display:grid;grid-template-columns:repeat(7,1fr);z-index:200;}
 .bn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--text3);cursor:pointer;}
 .bn.active{color:var(--green);}
-.bn-ic{font-size:18px;}
-.bn-lb{font-size:7px;letter-spacing:0.3px;text-transform:uppercase;text-align:center;}
+.bn-ic{font-size:16px;}
+.bn-lb{font-size:6.5px;letter-spacing:0.2px;text-transform:uppercase;text-align:center;line-height:1.1;}
 .wa-box{background:rgba(37,211,102,0.06);border:1px solid rgba(37,211,102,0.2);border-radius:10px;padding:14px;margin-bottom:14px;}
 .wa-box-t{font-size:13px;font-weight:700;color:var(--wa);margin-bottom:10px;}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:9999;}
@@ -222,6 +222,32 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
     </div>
   </div>
 
+  <div class="view" id="v-wo">
+    <div class="page-title">Work <span>Order</span></div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Informations</div></div>
+      <div class="card-body">
+        <div class="field"><label>Date</label><input type="date" id="wo-date"></div>
+        <div class="field"><label>Cree par</label><input type="text" id="wo-by" placeholder="ex: Gora Fall"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Taches</div><button class="btn btn-green btn-sm" onclick="addWO()">+ Ajouter tache</button></div>
+      <div class="card-body"><div id="wo-list"></div></div>
+    </div>
+    <button class="btn btn-amber" onclick="genWO()">Generer le document</button>
+    <button class="btn btn-ghost" onclick="clearWO()">Reinitialiser</button>
+    <div id="wo-out" style="display:none;margin-top:14px;">
+      <div class="wa-box">
+        <div class="wa-box-t">Partager le document</div>
+        <button class="btn btn-wa" onclick="sharePDF('w','Work_Order')">Partager PDF (WhatsApp)</button>
+        <button class="btn btn-amber" onclick="openPDF('w','Work_Order')">Ouvrir le PDF</button>
+        <button class="btn btn-ghost" onclick="dlPDF('w','Work_Order')">Telecharger PDF</button>
+      </div>
+      <div id="doc-w"></div>
+    </div>
+  </div>
+
   <div class="view" id="v-info">
     <div class="page-title">Envoyer <span>les rapports</span></div>
     <div class="wa-box">
@@ -243,6 +269,7 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
   <button class="bn" id="bn-hist" onclick="nav('hist')"><span class="bn-ic">&#128451;</span><span class="bn-lb">Historique</span></button>
   <button class="bn" id="bn-mds" onclick="nav('mds')"><span class="bn-ic">&#9989;</span><span class="bn-lb">MDS</span></button>
   <button class="bn" id="bn-oil" onclick="nav('oil')"><span class="bn-ic">&#128738;</span><span class="bn-lb">Huile</span></button>
+  <button class="bn" id="bn-wo" onclick="nav('wo')"><span class="bn-ic">&#128203;</span><span class="bn-lb">Work Order</span></button>
   <button class="bn" id="bn-info" onclick="nav('info')"><span class="bn-ic">&#128228;</span><span class="bn-lb">Envoyer</span></button>
 </div>
 
@@ -262,7 +289,7 @@ var TECHS = ["Abdoulaye Ndiaye","Abou Ba","Adama Yague","Babacar Badara Diop","B
 
 var DB;
 try { DB = JSON.parse(localStorage.getItem("gmao_v3") || "[]"); if(!Array.isArray(DB)) DB = []; } catch(e){ DB = []; }
-function saveDB(){ try{ localStorage.setItem("gmao_v3", JSON.stringify(DB)); }catch(e){} }
+function saveDB(){ try{ localStorage.setItem("gmao_v3", JSON.stringify(DB)); }catch(e){ toast("Memoire pleine - le rapport marche mais ne sera pas garde dans l historique"); } }
 
 function toast(m){ var t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},2500); }
 
@@ -276,6 +303,7 @@ function nav(v){
   if(v==="hist") renderHist();
   if(v==="mds") initMDS();
   if(v==="oil") initOil();
+  if(v==="wo") initWO();
   window.scrollTo(0,0);
 }
 
@@ -595,6 +623,7 @@ function makePDF(which){
   if(which==="p"){ if(!lastPanne){ toast("Genere le rapport dabord"); return null; } return buildPannePDF(); }
   else if(which==="m"){ if(!lastMDS){ toast("Genere le document dabord"); return null; } return buildMDSPDF(); }
   else if(which==="o"){ if(!lastOil){ toast("Genere le document dabord"); return null; } return buildOilPDF(); }
+  else if(which==="w"){ if(!lastWO){ toast("Genere le document dabord"); return null; } return buildWOPDF(); }
   else { if(!lastDaily){ toast("Genere le document dabord"); return null; } return buildDailyPDF(); }
 }
 
@@ -607,6 +636,7 @@ function collectAllReports(){
   if(lastDaily){ list.push({doc:buildDailyPDF(),name:"Daily_Service"}); }
   if(lastMDS){ list.push({doc:buildMDSPDF(),name:"MDS_Compliance"}); }
   if(lastOil){ list.push({doc:buildOilPDF(),name:"Oil_Report"}); }
+  if(lastWO){ list.push({doc:buildWOPDF(),name:"Work_Order"}); }
   return list;
 }
 function shareAllPDF(){
@@ -990,6 +1020,292 @@ function buildOilPDF(){
   doc.text("Supervisor: "+m.sup,x+120,y); y+=7;
   doc.setFont("helvetica","normal");
   doc.text("Commentaires: "+m.comment,x,y,{maxWidth:W-20});
+  return doc;
+}
+
+/* ===== WORK ORDER ===== */
+var WO_STATUS=["A faire","En cours","Termine"];
+function woStatusColor(s){
+  if(s==="Termine") return "#1a7a4e";
+  if(s==="En cours") return "#f0a832";
+  return "#f04848"; // A faire
+}
+function initWO(){
+  if(!document.getElementById("wo-date").value) document.getElementById("wo-date").valueAsDate=new Date();
+  if(document.getElementById("wo-list").children.length===0) addWO();
+}
+var woCount=0;
+function addWO(){
+  woCount++;
+  var id=woCount;
+  var list=document.getElementById("wo-list");
+  var d=document.createElement("div"); d.className="mb-card";
+  var head=document.createElement("div"); head.className="mb-head";
+  var t=document.createElement("div"); t.className="mb-title"; t.textContent="Tache "+id;
+  var rm=document.createElement("button"); rm.className="rm"; rm.textContent="\u2715"; rm.onclick=function(){ d.remove(); };
+  head.appendChild(t); head.appendChild(rm);
+  var body=document.createElement("div"); body.className="mb-body";
+  // machine
+  var fM=document.createElement("div"); fM.className="field";
+  var lM=document.createElement("label"); lM.textContent="Machine";
+  var sM=document.createElement("select"); sM.className="wo-rig";
+  sM.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;font-weight:700;";
+  var o0=document.createElement("option"); o0.value=""; o0.textContent="-- Choisir machine --"; sM.appendChild(o0);
+  for(var i=0;i<RIGS.length;i++){ var o=document.createElement("option"); o.value=RIGS[i]; o.textContent=RIGS[i]; sM.appendChild(o); }
+  sM.onchange=function(){ t.textContent=this.value?("Tache "+id+" - "+this.value):("Tache "+id); };
+  fM.appendChild(lM); fM.appendChild(sM); body.appendChild(fM);
+  // defaut
+  var fD=document.createElement("div"); fD.className="field";
+  var lD=document.createElement("label"); lD.textContent="Defaut";
+  var iD=document.createElement("input"); iD.type="text"; iD.className="wo-def"; iD.placeholder="ex: Fuite hydraulique";
+  iD.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;";
+  fD.appendChild(lD); fD.appendChild(iD); body.appendChild(fD);
+  // statut
+  var fS=document.createElement("div"); fS.className="field";
+  var lS=document.createElement("label"); lS.textContent="Statut";
+  var sS=document.createElement("select"); sS.className="wo-stat";
+  sS.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;";
+  for(var k=0;k<WO_STATUS.length;k++){ var os=document.createElement("option"); os.value=WO_STATUS[k]; os.textContent=WO_STATUS[k]; sS.appendChild(os); }
+  fS.appendChild(lS); fS.appendChild(sS); body.appendChild(fS);
+  // techniciens (plusieurs possibles)
+  var fT=document.createElement("div"); fT.className="field";
+  var lT=document.createElement("label"); lT.textContent="Technicien(s) assigne(s)";
+  var tags=document.createElement("div"); tags.className="wo-tech-tags"; tags.style.cssText="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;";
+  var sT=document.createElement("select");
+  sT.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;margin-bottom:6px;";
+  var ot0=document.createElement("option"); ot0.value=""; ot0.textContent="-- Choisir un technicien --"; sT.appendChild(ot0);
+  for(var x=0;x<TECHS.length;x++){ var ot=document.createElement("option"); ot.value=TECHS[x]; ot.textContent=TECHS[x]; sT.appendChild(ot); }
+  var freeT=document.createElement("input"); freeT.type="text"; freeT.placeholder="ou tape un autre nom";
+  freeT.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;margin-bottom:6px;";
+  function woAddTag(name){
+    if(!name) return;
+    var tag=document.createElement("span"); tag.className="wo-tech-tag"; tag.setAttribute("data-name",name);
+    tag.style.cssText="display:inline-flex;align-items:center;gap:6px;background:rgba(34,201,122,0.15);color:var(--green);border:1px solid rgba(34,201,122,0.3);border-radius:20px;padding:6px 12px;font-size:13px;font-weight:600;";
+    var tx=document.createElement("span"); tx.textContent=name;
+    var xb=document.createElement("button"); xb.textContent="\u2715"; xb.style.cssText="background:none;border:none;color:var(--green);cursor:pointer;font-size:14px;padding:0;";
+    xb.onclick=function(){ tag.remove(); };
+    tag.appendChild(tx); tag.appendChild(xb); tags.appendChild(tag);
+  }
+  sT.onchange=function(){ if(this.value){ woAddTag(this.value); this.value=""; } };
+  var addBtn=document.createElement("button"); addBtn.textContent="+ Ajouter ce nom"; addBtn.className="btn btn-ghost btn-sm"; addBtn.style.cssText="margin:0;";
+  addBtn.onclick=function(){ woAddTag(freeT.value.trim()); freeT.value=""; };
+  fT.appendChild(lT); fT.appendChild(tags); fT.appendChild(sT); fT.appendChild(freeT); fT.appendChild(addBtn); body.appendChild(fT);
+  // photos
+  var fP=document.createElement("div"); fP.className="field";
+  var lP=document.createElement("label"); lP.textContent="Photos du defaut";
+  var photoIn=document.createElement("input"); photoIn.type="file"; photoIn.accept="image/*"; photoIn.multiple=true;
+  photoIn.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:10px;font-size:14px;color:var(--text);width:100%;";
+  var thumbs=document.createElement("div"); thumbs.className="wo-thumbs"; thumbs.style.cssText="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;";
+  photoIn.onchange=function(){
+    var files=this.files;
+    for(var f=0;f<files.length;f++){ compressImage(files[f],function(dataUrl){ addThumb(thumbs,dataUrl); }); }
+    this.value="";
+  };
+  fP.appendChild(lP); fP.appendChild(photoIn); fP.appendChild(thumbs); body.appendChild(fP);
+  d.appendChild(head); d.appendChild(body); list.appendChild(d);
+}
+function addThumb(container,dataUrl){
+  var wrap=document.createElement("div");
+  wrap.style.cssText="position:relative;width:64px;height:64px;border-radius:6px;overflow:hidden;border:1px solid var(--border2);";
+  var img=document.createElement("img");
+  img.src=dataUrl; img.className="wo-photo"; img.setAttribute("data-url",dataUrl);
+  img.style.cssText="width:100%;height:100%;object-fit:cover;";
+  var x=document.createElement("button");
+  x.textContent="\u2715";
+  x.style.cssText="position:absolute;top:1px;right:1px;background:rgba(240,72,72,0.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1;";
+  x.onclick=function(){ wrap.remove(); };
+  wrap.appendChild(img); wrap.appendChild(x); container.appendChild(wrap);
+}
+// Compresse une image (max 1000px, qualite 0.6) en dataURL JPEG
+function compressImage(file,cb){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var max=1000;
+      var w=img.width, h=img.height;
+      if(w>h&&w>max){ h=Math.round(h*max/w); w=max; }
+      else if(h>=w&&h>max){ w=Math.round(w*max/h); h=max; }
+      var canvas=document.createElement("canvas");
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      cb(canvas.toDataURL("image/jpeg",0.6));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function getWO(){
+  var cards=document.getElementById("wo-list").children;
+  var out=[];
+  for(var i=0;i<cards.length;i++){
+    var c=cards[i];
+    var rig=c.querySelector(".wo-rig").value;
+    var def=c.querySelector(".wo-def").value.trim();
+    if(!rig&&!def) continue;
+    var techTags=c.querySelectorAll(".wo-tech-tag");
+    var techNames=[];
+    for(var tn=0;tn<techTags.length;tn++){ techNames.push(techTags[tn].getAttribute("data-name")); }
+    var tech=techNames.join(", ")||"-";
+    var photoEls=c.querySelectorAll(".wo-photo");
+    var photos=[];
+    for(var p=0;p<photoEls.length;p++){ photos.push(photoEls[p].getAttribute("data-url")); }
+    out.push({rig:rig||"-",def:def||"-",stat:c.querySelector(".wo-stat").value,tech:tech||"-",photos:photos});
+  }
+  return out;
+}
+function clearWO(){
+  if(!confirm("Reinitialiser le Work Order ?")) return;
+  document.getElementById("wo-list").innerHTML="";
+  document.getElementById("wo-by").value="";
+  document.getElementById("wo-out").style.display="none";
+  woCount=0;
+  initWO();
+  toast("Reinitialise");
+}
+var lastWO=null;
+function woGroupByMachine(rows){
+  var groups=[]; var idx={};
+  for(var i=0;i<rows.length;i++){
+    var rig=rows[i].rig;
+    if(idx[rig]===undefined){ idx[rig]=groups.length; groups.push({rig:rig,tasks:[]}); }
+    groups[idx[rig]].tasks.push(rows[i]);
+  }
+  return groups;
+}
+function genWO(){
+  var rows=getWO();
+  if(!rows.length){ toast("Ajoute au moins une tache"); return; }
+  var meta={date:document.getElementById("wo-date").value,by:document.getElementById("wo-by").value||"-"};
+  lastWO={rows:rows,meta:meta};
+  DB.push({type:"WorkOrder",date:meta.date,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
+  saveDB();
+  var groups=woGroupByMachine(rows);
+  var tr="";
+  for(var gi=0;gi<groups.length;gi++){
+    var g=groups[gi];
+    for(var ti=0;ti<g.tasks.length;ti++){
+      var r=g.tasks[ti];
+      var col=woStatusColor(r.stat);
+      tr+='<tr>';
+      if(ti===0){
+        tr+='<td rowspan="'+g.tasks.length+'" style="border:1px solid #9a8a64;padding:7px;text-align:center;font-weight:800;background:#f7f0e0;color:#14100a;font-size:14px;vertical-align:middle;">'+g.rig+'</td>';
+      }
+      tr+='<td style="border:1px solid #9a8a64;padding:7px;background:#fffdf7;color:#14100a;">'+r.def+'</td>'+
+      '<td style="border:1px solid #9a8a64;padding:7px;text-align:center;background:#fffdf7;font-weight:700;color:'+col+';">'+r.stat+'</td>'+
+      '<td style="border:1px solid #9a8a64;padding:7px;background:#fffdf7;color:#14100a;">'+r.tech+'</td></tr>';
+    }
+  }
+  // galerie photos groupee par machine
+  var gallery="";
+  for(var gg=0;gg<groups.length;gg++){
+    var grp=groups[gg];
+    var hasPhoto=false;
+    for(var c1=0;c1<grp.tasks.length;c1++){ if(grp.tasks[c1].photos&&grp.tasks[c1].photos.length){ hasPhoto=true; break; } }
+    if(!hasPhoto) continue;
+    gallery+='<div style="margin-bottom:12px;"><div style="font-size:13px;font-weight:800;color:#2b3a4a;margin-bottom:5px;">'+grp.rig+'</div>';
+    for(var c2=0;c2<grp.tasks.length;c2++){
+      var tk=grp.tasks[c2];
+      if(!tk.photos||!tk.photos.length) continue;
+      gallery+='<div style="font-size:11px;color:#3a2c12;margin:4px 0 3px;">'+tk.def+'</div><div style="display:flex;flex-wrap:wrap;gap:6px;">';
+      for(var ph=0;ph<tk.photos.length;ph++){
+        gallery+='<img src="'+tk.photos[ph]+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #c9a96a;">';
+      }
+      gallery+='</div>';
+    }
+    gallery+='</div>';
+  }
+  document.getElementById("doc-w").innerHTML=
+    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">ENDEAVOUR MINING</div>'+
+    '<h2 style="text-align:center;font-size:15px;color:#2b3a4a;margin-bottom:10px;">WORK ORDER</h2>'+
+    '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>Date:</b> '+fmtDate(meta.date)+' &nbsp; <b>Cree par:</b> '+meta.by+'</div>'+
+    '<table style="width:100%;border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;">'+
+    '<thead><tr style="background:#7d8d9b;color:#0c1419;font-size:11px;"><th style="border:1px solid #5a6876;padding:6px;">Machine</th><th style="border:1px solid #5a6876;padding:6px;">Defaut</th><th style="border:1px solid #5a6876;padding:6px;">Statut</th><th style="border:1px solid #5a6876;padding:6px;">Technicien</th></tr></thead>'+
+    '<tbody>'+tr+'</tbody></table>'+
+    (gallery?'<div style="margin-top:8px;"><div style="font-size:13px;font-weight:700;color:#2b3a4a;margin-bottom:6px;">Photos des defauts</div>'+gallery+'</div>':'');
+  document.getElementById("wo-out").style.display="block";
+  document.getElementById("wo-out").scrollIntoView({behavior:"smooth"});
+  toast("Document genere");
+}
+function buildWOPDF(){
+  var JsPDF=getJsPDF();
+  var doc=new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var m=lastWO.meta, rows=lastWO.rows;
+  var W=210, x=14, y=18;
+  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(43,58,74);
+  doc.text("ENDEAVOUR MINING",W/2,y,{align:"center"}); y+=7;
+  doc.setFontSize(13);
+  doc.text("WORK ORDER",W/2,y,{align:"center"}); y+=9;
+  doc.setFontSize(11); doc.setTextColor(58,44,18); doc.setFont("helvetica","normal");
+  doc.text("Date: "+fmtDate(m.date)+"    Cree par: "+m.by,x,y); y+=8;
+  var cols=[{t:"Machine",w:30},{t:"Defaut",w:72},{t:"Statut",w:32},{t:"Technicien",w:48}];
+  function row(cells,bold,fill,statColor){
+    var h=9, cx=x;
+    for(var i=0;i<cells.length;i++){
+      if(fill){ doc.setFillColor(fill[0],fill[1],fill[2]); doc.rect(cx,y,cols[i].w,h,"F"); }
+      doc.setDrawColor(150,138,100); doc.rect(cx,y,cols[i].w,h);
+      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(9);
+      if(statColor&&i===2) doc.setTextColor(statColor[0],statColor[1],statColor[2]); else doc.setTextColor(20,16,10);
+      var txt=doc.splitTextToSize(String(cells[i]||"-"),cols[i].w-3);
+      doc.text(txt,cx+1.5,y+5.5);
+      cx+=cols[i].w;
+    }
+    y+=h;
+  }
+  row(cols.map(function(c){return c.t;}),true,[125,141,155]);
+  var groups=woGroupByMachine(rows);
+  // ligne avec cellule machine eventuellement vide (pour grouper)
+  function rowGrouped(rigCell,def,stat,tech,statColor){
+    var h=9, cx=x;
+    var cells=[rigCell,def,stat,tech];
+    for(var i=0;i<cells.length;i++){
+      doc.setFillColor(i===0?247:255,i===0?240:253,i===0?224:247); doc.rect(cx,y,cols[i].w,h,"F");
+      doc.setDrawColor(150,138,100); doc.rect(cx,y,cols[i].w,h);
+      doc.setFont("helvetica",i===0?"bold":"normal"); doc.setFontSize(i===0?11:9);
+      if(statColor&&i===2) doc.setTextColor(statColor[0],statColor[1],statColor[2]); else doc.setTextColor(20,16,10);
+      var txt=doc.splitTextToSize(String(cells[i]||""),cols[i].w-3);
+      if(i===0) doc.text(txt,cx+cols[i].w/2,y+6,{align:"center"});
+      else doc.text(txt,cx+1.5,y+5.5);
+      cx+=cols[i].w;
+    }
+    y+=h;
+  }
+  for(var gi=0;gi<groups.length;gi++){
+    var g=groups[gi];
+    for(var ti=0;ti<g.tasks.length;ti++){
+      if(y>275){ doc.addPage(); y=18; }
+      var r=g.tasks[ti];
+      var c=woStatusColor(r.stat);
+      var rgb=c==="#1a7a4e"?[26,122,78]:(c==="#f0a832"?[240,168,50]:[240,72,72]);
+      rowGrouped(ti===0?g.rig:"",r.def,r.stat,r.tech,rgb);
+    }
+  }
+  y+=6;
+  // photos des defauts, groupees par machine
+  for(var gp=0;gp<groups.length;gp++){
+    var grp=groups[gp];
+    var anyPhoto=false;
+    for(var t1=0;t1<grp.tasks.length;t1++){ if(grp.tasks[t1].photos&&grp.tasks[t1].photos.length){ anyPhoto=true; break; } }
+    if(!anyPhoto) continue;
+    if(y>255){ doc.addPage(); y=18; }
+    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(43,58,74);
+    doc.text(grp.rig,x,y); y+=6;
+    for(var t2=0;t2<grp.tasks.length;t2++){
+      var tk=grp.tasks[t2];
+      if(!tk.photos||!tk.photos.length) continue;
+      if(y>270){ doc.addPage(); y=18; }
+      doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(58,44,18);
+      doc.text("- "+tk.def,x,y); y+=4;
+      var px=x, ph=50, pw=50;
+      for(var k=0;k<tk.photos.length;k++){
+        if(px+pw>W-x){ px=x; y+=ph+3; }
+        if(y+ph>285){ doc.addPage(); y=18; px=x; }
+        try{ doc.addImage(tk.photos[k],"JPEG",px,y,pw,ph); }catch(e){}
+        px+=pw+3;
+      }
+      y+=ph+6;
+    }
+  }
   return doc;
 }
 
