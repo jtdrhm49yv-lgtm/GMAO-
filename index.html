@@ -51,11 +51,11 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 .rm{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px 8px;}
 .empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:12px;}
 .empty .ei{font-size:38px;margin-bottom:10px;}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);height:64px;display:grid;grid-template-columns:repeat(5,1fr);z-index:200;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);height:64px;display:grid;grid-template-columns:repeat(6,1fr);z-index:200;}
 .bn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--text3);cursor:pointer;}
 .bn.active{color:var(--green);}
-.bn-ic{font-size:21px;}
-.bn-lb{font-size:8px;letter-spacing:0.5px;text-transform:uppercase;}
+.bn-ic{font-size:18px;}
+.bn-lb{font-size:7px;letter-spacing:0.3px;text-transform:uppercase;text-align:center;}
 .wa-box{background:rgba(37,211,102,0.06);border:1px solid rgba(37,211,102,0.2);border-radius:10px;padding:14px;margin-bottom:14px;}
 .wa-box-t{font-size:13px;font-weight:700;color:var(--wa);margin-bottom:10px;}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:9999;}
@@ -185,14 +185,49 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
     </div>
   </div>
 
+  <div class="view" id="v-oil">
+    <div class="page-title">Rapport <span>Huile</span></div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Informations</div></div>
+      <div class="card-body">
+        <div class="field"><label>ST</label><input type="text" id="oil-st" placeholder="ex: 210"></div>
+        <div class="field"><label>Date</label><input type="date" id="oil-date"></div>
+        <div class="field"><label>Shift</label><select id="oil-shift"><option>Night</option><option>Day</option></select></div>
+        <div class="field"><label>Truck Operator</label><div id="oil-op-wrap"></div></div>
+        <div class="field"><label>Supervisor</label><div id="oil-sup-wrap"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Machines</div><button class="btn btn-green btn-sm" onclick="addOil()">+ Ajouter machine</button></div>
+      <div class="card-body"><div id="oil-list"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Commentaires</div></div>
+      <div class="card-body"><div class="field"><input type="text" id="oil-comment" placeholder="ex: Booster RC 35 Coolant"></div></div>
+    </div>
+    <button class="btn btn-amber" onclick="genOil()">Generer le document</button>
+    <button class="btn btn-ghost" onclick="clearOil()">Reinitialiser</button>
+    <div id="oil-out" style="display:none;margin-top:14px;">
+      <div class="wa-box">
+        <div class="wa-box-t">Partager le document</div>
+        <button class="btn btn-wa" onclick="sharePDF('o','Oil_Report')">Partager PDF (WhatsApp)</button>
+        <button class="btn btn-amber" onclick="openPDF('o','Oil_Report')">Ouvrir le PDF</button>
+        <button class="btn btn-ghost" onclick="dlPDF('o','Oil_Report')">Telecharger PDF</button>
+      </div>
+      <div id="doc-o"></div>
+    </div>
+  </div>
+
   <div class="view" id="v-info">
-    <div class="page-title">Aide</div>
-    <div class="card"><div class="card-body" style="font-size:13px;line-height:1.7;color:var(--text2);">
-      <p style="margin-bottom:10px;"><b style="color:var(--green);">Rapport de Panne :</b> remplis le shift, ajoute les pannes, puis Generer le rapport.</p>
-      <p style="margin-bottom:10px;"><b style="color:var(--green);">Daily Service :</b> ajoute les machines faites, choisis le type, puis Generer le document.</p>
-      <p style="margin-bottom:10px;"><b style="color:var(--blue);">Partager sur WhatsApp :</b><br>1. Appuie sur <b>Ouvrir le PDF</b> &mdash; le PDF s ouvre dans un nouvel onglet.<br>2. Appuie sur le bouton <b>Partage</b> du navigateur (icone carre avec fleche vers le haut).<br>3. Choisis <b>WhatsApp</b> et le groupe.</p>
-      <p style="margin-bottom:10px;"><b style="color:var(--blue);">Astuce :</b> le bouton "Partage rapide" ouvre WhatsApp directement, mais seulement sur Safari.</p>
-      <p><b style="color:var(--amber);">Note :</b> les donnees sont stockees sur ton telephone uniquement.</p>
+    <div class="page-title">Envoyer <span>les rapports</span></div>
+    <div class="wa-box">
+      <div class="wa-box-t">Envoyer TOUS les rapports remplis</div>
+      <div style="font-size:11.5px;color:var(--text3);margin-bottom:10px;">Genere et partage en PDF tous les rapports que tu as crees (Panne, Daily, MDS, Huile). Seuls les rapports remplis sont envoyes.</div>
+      <button class="btn btn-wa" onclick="shareAllPDF()">Partager tous les PDF</button>
+      <button class="btn btn-amber" onclick="downloadAllPDF()">Telecharger tous les PDF</button>
+    </div>
+    <div class="card"><div class="card-body" style="font-size:12.5px;line-height:1.6;color:var(--text3);">
+      <p><b style="color:var(--amber);">Note :</b> les donnees sont stockees sur ton telephone uniquement. Pour partager sur WhatsApp, ouvre l app dans Safari ou Chrome (pas dans la fenetre integree).</p>
     </div></div>
   </div>
 
@@ -203,7 +238,8 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
   <button class="bn" id="bn-daily" onclick="nav('daily')"><span class="bn-ic">&#128203;</span><span class="bn-lb">Daily</span></button>
   <button class="bn" id="bn-hist" onclick="nav('hist')"><span class="bn-ic">&#128451;</span><span class="bn-lb">Historique</span></button>
   <button class="bn" id="bn-mds" onclick="nav('mds')"><span class="bn-ic">&#9989;</span><span class="bn-lb">MDS</span></button>
-  <button class="bn" id="bn-info" onclick="nav('info')"><span class="bn-ic">&#8505;</span><span class="bn-lb">Aide</span></button>
+  <button class="bn" id="bn-oil" onclick="nav('oil')"><span class="bn-ic">&#128738;</span><span class="bn-lb">Huile</span></button>
+  <button class="bn" id="bn-info" onclick="nav('info')"><span class="bn-ic">&#128228;</span><span class="bn-lb">Envoyer</span></button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -213,6 +249,11 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 <script>
 var WA_NUMBER = "221779515790";
 var RIGS = ["DR218","DR219","DR220","DR221","DR222","DR223","DR224","DR225","DR226","DR227","DR228","DR229","DR230","DR231"];
+var OIL_RIGS = ["DR215","DR218","DR219","DR220","DR221","DR222","DR223","DR224","DR225","DR226","DR227","DR228","DR229","DR230","DR231"];
+var OIL_FLUIDS = ["15w40","T 320","Om 46-220","Oil 68","Coolant","COR 54 68","Om-54 320"];
+var OIL_COMP = ["Eng","Comp","G/Box","Hyd/T","W/H TD","F/FD","R/Bead","Coolant","Rockol"];
+var OIL_NAMES = ["Dandiala Cissokho","Ismaila Mbaye","Sambou Cissokho","Idrissa Dagnakho","Ibrahima Ndiaye"];
+var OIL_SUPS = ["Moussa Diop","Mory Moussa Danfakha","Boye Diallo","Matar Bary","Gora Fall","Serigne Cisse","Djiby Camara","Youssou Faye","Mame Mor Fall Dembele","Moussa Gueye","Mbaye Seck Diaw"];
 var TECHS = ["Abdoulaye Ndiaye","Abou Ba","Adama Yague","Babacar Badara Diop","Bailo Kante","Bernard Ngom Sene","Boye Diallo","Chams Edine Dieng","Cheikh Niang","Dandiala Cissokho","Daouda Sene","Djiby Camara","Edouard Coly","Fatou Bintou","Gora Fall","Ibrahima Diallo","Ibrahima Kane","Ibrahima Ndiaye","Idrissa Dagnakho","Idy Diouf","Ismaila Mbaye","Mamadou Cisse","Mamadou Diop","Mamor Fall Dembele","Matar Bary","Mbaye Seck Diaw","Modou A B Seck","Mory Moussa Danfakha","Moussa Diop","Moussa Gueye","Ndiaga Ngom","Ousmane Toure","Paul Gabriel","Pierre Louis Diouf","Samba Ngom","Sambou Cissokho","Saydou Diallo","Serigne Cisse","Sidiya Dabo","Youssou Faye","Youssoupha Lo"];
 
 var DB;
@@ -230,6 +271,7 @@ function nav(v){
   document.getElementById("bn-"+v).classList.add("active");
   if(v==="hist") renderHist();
   if(v==="mds") initMDS();
+  if(v==="oil") initOil();
   window.scrollTo(0,0);
 }
 
@@ -545,7 +587,70 @@ function makePDF(which){
   if(!JsPDF){ toast("Patiente, chargement..."); return null; }
   if(which==="p"){ if(!lastPanne){ toast("Genere le rapport dabord"); return null; } return buildPannePDF(); }
   else if(which==="m"){ if(!lastMDS){ toast("Genere le document dabord"); return null; } return buildMDSPDF(); }
+  else if(which==="o"){ if(!lastOil){ toast("Genere le document dabord"); return null; } return buildOilPDF(); }
   else { if(!lastDaily){ toast("Genere le document dabord"); return null; } return buildDailyPDF(); }
+}
+
+// Construit la liste des rapports remplis (PDF + nom)
+function collectAllReports(){
+  var JsPDF=getJsPDF();
+  if(!JsPDF){ toast("Patiente, chargement..."); return []; }
+  var list=[];
+  if(lastPanne){ list.push({doc:buildPannePDF(),name:"Rapport_Panne"}); }
+  if(lastDaily){ list.push({doc:buildDailyPDF(),name:"Daily_Service"}); }
+  if(lastMDS){ list.push({doc:buildMDSPDF(),name:"MDS_Compliance"}); }
+  if(lastOil){ list.push({doc:buildOilPDF(),name:"Oil_Report"}); }
+  return list;
+}
+function shareAllPDF(){
+  var reports=collectAllReports();
+  if(!reports.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
+  var files=[];
+  for(var i=0;i<reports.length;i++){
+    var blob=reports[i].doc.output("blob");
+    files.push(new File([blob],reports[i].name+".pdf",{type:"application/pdf"}));
+  }
+  if(navigator.canShare&&navigator.canShare({files:files})){
+    navigator.share({files:files,title:"Rapports Endeavour Mining"}).then(function(){toast("Partage");}).catch(function(e){
+      if(e&&e.name==="AbortError") return;
+      // fallback: partage un par un
+      shareFilesOneByOne(reports,0);
+    });
+  } else if(navigator.canShare&&files.length&&navigator.canShare({files:[files[0]]})){
+    // l appareil n accepte qu un fichier a la fois
+    toast("Envoi un par un...");
+    shareFilesOneByOne(reports,0);
+  } else {
+    // pas de partage: telecharge tout
+    downloadAllPDF();
+  }
+}
+function shareFilesOneByOne(reports,idx){
+  if(idx>=reports.length){ toast("Termine"); return; }
+  var blob=reports[idx].doc.output("blob");
+  var file=new File([blob],reports[idx].name+".pdf",{type:"application/pdf"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:reports[idx].name}).then(function(){
+      shareFilesOneByOne(reports,idx+1);
+    }).catch(function(e){
+      if(e&&e.name==="AbortError"){ shareFilesOneByOne(reports,idx+1); return; }
+      downloadBlob(blob,reports[idx].name+".pdf");
+      shareFilesOneByOne(reports,idx+1);
+    });
+  } else {
+    downloadBlob(blob,reports[idx].name+".pdf");
+    shareFilesOneByOne(reports,idx+1);
+  }
+}
+function downloadAllPDF(){
+  var reports=collectAllReports();
+  if(!reports.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
+  for(var i=0;i<reports.length;i++){
+    (function(rep,delay){
+      setTimeout(function(){ downloadBlob(rep.doc.output("blob"),rep.name+".pdf"); },delay);
+    })(reports[i],i*700);
+  }
+  toast(reports.length+" PDF telecharges");
 }
 
 // Partage le PDF (WhatsApp via menu natif) ou telecharge
@@ -690,6 +795,178 @@ function buildMDSPDF(){
   y+=6;
   doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(60,44,18);
   doc.text("Commentaires: "+m.comment,x,y,{maxWidth:W-28});
+  return doc;
+}
+
+/* ===== OIL REPORT ===== */
+function oilNamePicker(wrapId,names){
+  // menu deroulant des noms + ajout libre, valeur unique stockee dans data-name du wrap
+  var wrap=document.getElementById(wrapId);
+  var sel=document.createElement("select");
+  sel.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;margin-bottom:6px;";
+  var o0=document.createElement("option"); o0.value=""; o0.textContent="-- Choisir un nom --"; sel.appendChild(o0);
+  for(var i=0;i<names.length;i++){ var o=document.createElement("option"); o.value=names[i]; o.textContent=names[i]; sel.appendChild(o); }
+  var oa=document.createElement("option"); oa.value="__autre__"; oa.textContent="+ Autre nom..."; sel.appendChild(oa);
+  var free=document.createElement("input"); free.type="text"; free.placeholder="Tape le nom"; free.style.display="none";
+  free.style.cssText="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;";
+  sel.onchange=function(){
+    if(this.value==="__autre__"){ free.style.display="block"; wrap.setAttribute("data-name",""); }
+    else { free.style.display="none"; wrap.setAttribute("data-name",this.value); }
+  };
+  free.oninput=function(){ wrap.setAttribute("data-name",free.value.trim()); };
+  wrap.setAttribute("data-name","");
+  wrap.appendChild(sel); wrap.appendChild(free);
+}
+function initOil(){
+  if(!document.getElementById("oil-date").value) document.getElementById("oil-date").valueAsDate=new Date();
+  if(document.getElementById("oil-op-wrap").children.length===0) oilNamePicker("oil-op-wrap",OIL_NAMES);
+  if(document.getElementById("oil-sup-wrap").children.length===0) oilNamePicker("oil-sup-wrap",OIL_SUPS);
+  if(document.getElementById("oil-list").children.length===0) addOil();
+}
+var oilCount=0;
+function addOil(){
+  oilCount++;
+  var list=document.getElementById("oil-list");
+  var d=document.createElement("div"); d.className="mb-card";
+  var head=document.createElement("div"); head.className="mb-head";
+  var t=document.createElement("div"); t.className="mb-title"; t.textContent="Choisir machine";
+  var rm=document.createElement("button"); rm.className="rm"; rm.textContent="\u2715"; rm.onclick=function(){ d.remove(); };
+  head.appendChild(t); head.appendChild(rm);
+  var body=document.createElement("div"); body.className="mb-body";
+  // machine select
+  var fM=document.createElement("div"); fM.className="field";
+  var lM=document.createElement("label"); lM.textContent="Machine";
+  var sM=document.createElement("select"); sM.className="oil-rig";
+  sM.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;font-weight:700;";
+  var o0=document.createElement("option"); o0.value=""; o0.textContent="-- Choisir machine --"; sM.appendChild(o0);
+  for(var i=0;i<OIL_RIGS.length;i++){ var o=document.createElement("option"); o.value=OIL_RIGS[i]; o.textContent=OIL_RIGS[i]; sM.appendChild(o); }
+  sM.onchange=function(){ t.textContent=this.value||"Choisir machine"; };
+  fM.appendChild(lM); fM.appendChild(sM); body.appendChild(fM);
+  // fluids + components = champs nombre (1-2000)
+  var allCols=OIL_FLUIDS.concat(OIL_COMP);
+  for(var c=0;c<allCols.length;c++){
+    var f=document.createElement("div"); f.className="field";
+    var l=document.createElement("label"); l.textContent=allCols[c];
+    var s=document.createElement("input"); s.type="number"; s.min="1"; s.max="2000";
+    s.className="oil-val"; s.setAttribute("data-col",allCols[c]); s.placeholder="";
+    s.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;";
+    f.appendChild(l); f.appendChild(s); body.appendChild(f);
+  }
+  d.appendChild(head); d.appendChild(body); list.appendChild(d);
+}
+function getOil(){
+  var cards=document.getElementById("oil-list").children;
+  var out=[];
+  for(var i=0;i<cards.length;i++){
+    var c=cards[i];
+    var rig=c.querySelector(".oil-rig").value;
+    if(!rig) continue;
+    var vals={};
+    var sels=c.querySelectorAll(".oil-val");
+    for(var j=0;j<sels.length;j++){ if(sels[j].value) vals[sels[j].getAttribute("data-col")]=sels[j].value; }
+    out.push({rig:rig,vals:vals});
+  }
+  return out;
+}
+function clearOil(){
+  if(!confirm("Reinitialiser le rapport huile ?")) return;
+  document.getElementById("oil-list").innerHTML="";
+  document.getElementById("oil-op-wrap").innerHTML="";
+  document.getElementById("oil-sup-wrap").innerHTML="";
+  document.getElementById("oil-comment").value="";
+  document.getElementById("oil-out").style.display="none";
+  oilCount=0;
+  initOil();
+  toast("Reinitialise");
+}
+var lastOil=null;
+function genOil(){
+  var rows=getOil();
+  if(!rows.length){ toast("Ajoute au moins une machine"); return; }
+  var meta={st:document.getElementById("oil-st").value||"-",date:document.getElementById("oil-date").value,
+    shift:document.getElementById("oil-shift").value,
+    op:document.getElementById("oil-op-wrap").getAttribute("data-name")||"-",
+    sup:document.getElementById("oil-sup-wrap").getAttribute("data-name")||"-",
+    comment:document.getElementById("oil-comment").value||"-"};
+  lastOil={rows:rows,meta:meta};
+  DB.push({type:"Oil",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
+  saveDB();
+  // apercu ecran (tableau condense)
+  var allCols=OIL_FLUIDS.concat(OIL_COMP);
+  var th='<th style="border:1px solid #5a6876;padding:4px;background:#2b3a4a;color:#fff;font-size:9px;">Rig</th>';
+  for(var c=0;c<allCols.length;c++){ th+='<th style="border:1px solid #5a6876;padding:4px;background:#2b3a4a;color:#fff;font-size:8px;">'+allCols[c]+'</th>'; }
+  var tr="";
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    tr+='<tr><td style="border:1px solid #9a8a64;padding:4px;font-weight:700;background:#eef2f7;font-size:9px;text-align:center;">'+r.rig+'</td>';
+    for(var k=0;k<allCols.length;k++){
+      var v=r.vals[allCols[k]]||"";
+      tr+='<td style="border:1px solid #9a8a64;padding:4px;text-align:center;font-size:9px;color:#1a3a6a;font-weight:700;">'+v+'</td>';
+    }
+    tr+='</tr>';
+  }
+  document.getElementById("doc-o").innerHTML=
+    '<div style="font-size:18px;font-weight:800;color:#1a2a4a;margin-bottom:8px;">'+(meta.shift==="Night"?"NIGHT":"DAY")+' SHIFT OIL REPORT</div>'+
+    '<div style="font-size:12px;margin-bottom:10px;color:#1a3a6a;"><b>ST:</b> '+meta.st+' &nbsp; <b>Date:</b> '+fmtDate(meta.date)+'</div>'+
+    '<div style="overflow-x:auto;"><table style="border-collapse:collapse;border:2px solid #2b3a4a;margin-bottom:12px;"><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+
+    '<div style="font-size:12px;color:#1a3a6a;margin-bottom:4px;"><b>Truck Operator:</b> '+meta.op+'</div>'+
+    '<div style="font-size:12px;color:#1a3a6a;margin-bottom:4px;"><b>Supervisor:</b> '+meta.sup+'</div>'+
+    '<div style="font-size:12px;color:#1a3a6a;"><b>Commentaires:</b> '+meta.comment+'</div>';
+  document.getElementById("oil-out").style.display="block";
+  document.getElementById("oil-out").scrollIntoView({behavior:"smooth"});
+  toast("Document genere");
+}
+function buildOilPDF(){
+  var JsPDF=getJsPDF();
+  // paysage pour le grand tableau
+  var doc=new JsPDF({unit:"mm",format:"a4",orientation:"landscape"});
+  var m=lastOil.meta, rows=lastOil.rows;
+  var W=297, x=10, y=16;
+  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(26,42,74);
+  doc.text((m.shift==="Night"?"NIGHT":"DAY")+" SHIFT OIL REPORT",x,y); y+=8;
+  doc.setFontSize(11); doc.setFont("helvetica","normal"); doc.setTextColor(26,58,106);
+  doc.text("ST: "+m.st+"     Date: "+fmtDate(m.date),x,y); y+=7;
+  var allCols=OIL_FLUIDS.concat(OIL_COMP);
+  var rigW=18;
+  var colW=(W-2*x-rigW)/allCols.length;
+  // header
+  var cx=x;
+  doc.setFillColor(43,58,74); doc.rect(cx,y,rigW,12,"F");
+  doc.setDrawColor(90,104,118); doc.rect(cx,y,rigW,12);
+  doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont("helvetica","bold");
+  doc.text("Rig",cx+rigW/2,y+7,{align:"center"});
+  cx+=rigW;
+  for(var c=0;c<allCols.length;c++){
+    doc.setFillColor(43,58,74); doc.rect(cx,y,colW,12,"F"); doc.rect(cx,y,colW,12);
+    var lbl=doc.splitTextToSize(allCols[c],colW-1);
+    doc.text(lbl,cx+colW/2,y+6,{align:"center"});
+    cx+=colW;
+  }
+  y+=12;
+  // rows
+  doc.setFont("helvetica","normal");
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    cx=x;
+    doc.setFillColor(238,242,247); doc.rect(cx,y,rigW,8,"F"); doc.setDrawColor(154,138,100); doc.rect(cx,y,rigW,8);
+    doc.setTextColor(26,42,74); doc.setFont("helvetica","bold"); doc.setFontSize(8);
+    doc.text(r.rig,cx+rigW/2,y+5,{align:"center"});
+    cx+=rigW;
+    doc.setFont("helvetica","bold"); doc.setTextColor(26,58,106);
+    for(var k=0;k<allCols.length;k++){
+      doc.setFillColor(255,255,255); doc.rect(cx,y,colW,8,"F"); doc.rect(cx,y,colW,8);
+      var v=r.vals[allCols[k]]||"";
+      if(v) doc.text(String(v),cx+colW/2,y+5,{align:"center"});
+      cx+=colW;
+    }
+    y+=8;
+  }
+  y+=8;
+  doc.setTextColor(26,58,106); doc.setFontSize(10); doc.setFont("helvetica","bold");
+  doc.text("Truck Operator: "+m.op,x,y);
+  doc.text("Supervisor: "+m.sup,x+120,y); y+=7;
+  doc.setFont("helvetica","normal");
+  doc.text("Commentaires: "+m.comment,x,y,{maxWidth:W-20});
   return doc;
 }
 
