@@ -128,6 +128,10 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
       <div class="card-head"><div class="card-title">Machines</div><button class="btn btn-green btn-sm" onclick="addDaily()">+ Ajouter machine</button></div>
       <div class="card-body"><div id="daily-list"></div></div>
     </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Commentaires</div></div>
+      <div class="card-body"><div class="field"><input type="text" id="d-comment" placeholder="ex: RAS"></div></div>
+    </div>
     <button class="btn btn-amber" onclick="genDaily()">Generer le document</button>
     <button class="btn btn-ghost" onclick="clearDaily()">Reinitialiser</button>
 
@@ -448,7 +452,7 @@ function addDaily(data){
   d.appendChild(head); d.appendChild(body);
   list.appendChild(d);
 }
-function clearDaily(){ if(confirm("Reinitialiser ?")){ document.getElementById("daily-list").innerHTML=""; dCount=0; document.getElementById("daily-out").style.display="none"; } }
+function clearDaily(){ if(confirm("Reinitialiser ?")){ document.getElementById("daily-list").innerHTML=""; dCount=0; document.getElementById("d-comment").value=""; document.getElementById("daily-out").style.display="none"; } }
 
 function getDaily(){
   var cards=document.getElementById("daily-list").children;
@@ -467,7 +471,8 @@ function genDaily(){
   var rows=getDaily();
   if(!rows.length){ toast("Ajoute au moins une machine"); return; }
   var meta={date:document.getElementById("d-date").value,loc:document.getElementById("d-loc").value||"-",
-    shift:document.getElementById("d-shift").value,lead:document.getElementById("d-lead").value||"-",forman:document.getElementById("d-forman").value||"-"};
+    shift:document.getElementById("d-shift").value,lead:document.getElementById("d-lead").value||"-",forman:document.getElementById("d-forman").value||"-",
+    comment:document.getElementById("d-comment").value||"-"};
   lastDaily={rows:rows,meta:meta};
   DB.push({type:"Daily",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
   saveDB();
@@ -488,7 +493,8 @@ function genDaily(){
     '<thead><tr style="background:#7d8d9b;color:#0c1419;font-size:11px;"><th style="border:1px solid #5a6876;padding:6px;">Rig</th><th style="border:1px solid #5a6876;padding:6px;">Begin</th><th style="border:1px solid #5a6876;padding:6px;">End</th><th style="border:1px solid #5a6876;padding:6px;">Type</th></tr></thead>'+
     '<tbody>'+tr+'</tbody></table>'+
     '<div style="font-size:12px;color:#3a2c12;"><b>Daily Service Leading Hand:</b> '+meta.lead+'</div>'+
-    '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Pit Maint Forman:</b> '+meta.forman+'</div>';
+    '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Pit Maint Forman:</b> '+meta.forman+'</div>'+
+    '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Commentaires:</b> '+meta.comment+'</div>';
   document.getElementById("daily-out").style.display="block";
   document.getElementById("daily-out").scrollIntoView({behavior:"smooth"});
   toast("Document genere");
@@ -578,7 +584,8 @@ function buildDailyPDF(){
   y+=8;
   doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(60,44,18);
   doc.text("Daily Service Leading Hand: "+m.lead,x,y); y+=6;
-  doc.text("Pit Maint Forman: "+m.forman,x,y);
+  doc.text("Pit Maint Forman: "+m.forman,x,y); y+=6;
+  doc.text("Commentaires: "+(m.comment||"-"),x,y,{maxWidth:W-28});
   return doc;
 }
 
