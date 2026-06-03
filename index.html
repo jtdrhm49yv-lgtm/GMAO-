@@ -900,26 +900,27 @@ function genOil(){
     if(used) usedCols.push(allCols[u]);
   }
   if(!usedCols.length) usedCols=["(aucune valeur)"];
-  // apercu ecran (tableau condense)
-  var th='<th style="border:1px solid #5a6876;padding:4px;background:#2b3a4a;color:#fff;font-size:9px;">Rig</th>';
-  for(var c=0;c<usedCols.length;c++){ th+='<th style="border:1px solid #5a6876;padding:4px;background:#2b3a4a;color:#fff;font-size:8px;">'+usedCols[c]+'</th>'; }
+  // apercu ecran (tableau condense) - memes couleurs que les autres rapports
+  var th='<th style="border:1px solid #5a6876;padding:5px;background:#7d8d9b;color:#0c1419;font-size:9px;">Rig</th>';
+  for(var c=0;c<usedCols.length;c++){ th+='<th style="border:1px solid #5a6876;padding:5px;background:#7d8d9b;color:#0c1419;font-size:8px;">'+usedCols[c]+'</th>'; }
   var tr="";
   for(var i=0;i<rows.length;i++){
     var r=rows[i];
-    tr+='<tr><td style="border:1px solid #9a8a64;padding:4px;font-weight:700;background:#eef2f7;font-size:9px;text-align:center;">'+r.rig+'</td>';
+    tr+='<tr><td style="border:1px solid #9a8a64;padding:5px;font-weight:700;background:#f7f0e0;font-size:9px;text-align:center;color:#14100a;">'+r.rig+'</td>';
     for(var k=0;k<usedCols.length;k++){
       var vv=r.vals[usedCols[k]]||"";
-      tr+='<td style="border:1px solid #9a8a64;padding:4px;text-align:center;font-size:9px;color:#1a3a6a;font-weight:700;">'+vv+'</td>';
+      tr+='<td style="border:1px solid #9a8a64;padding:5px;text-align:center;font-size:9px;color:#14100a;font-weight:700;background:#fffdf7;">'+vv+'</td>';
     }
     tr+='</tr>';
   }
   document.getElementById("doc-o").innerHTML=
-    '<div style="font-size:18px;font-weight:800;color:#1a2a4a;margin-bottom:8px;">'+(meta.shift==="Night"?"NIGHT":"DAY")+' SHIFT OIL REPORT</div>'+
-    '<div style="font-size:12px;margin-bottom:10px;color:#1a3a6a;"><b>ST:</b> '+meta.st+' &nbsp; <b>Date:</b> '+fmtDate(meta.date)+'</div>'+
-    '<div style="overflow-x:auto;"><table style="border-collapse:collapse;border:2px solid #2b3a4a;margin-bottom:12px;"><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+
-    '<div style="font-size:12px;color:#1a3a6a;margin-bottom:4px;"><b>Truck Operator:</b> '+meta.op+'</div>'+
-    '<div style="font-size:12px;color:#1a3a6a;margin-bottom:4px;"><b>Supervisor:</b> '+meta.sup+'</div>'+
-    '<div style="font-size:12px;color:#1a3a6a;"><b>Commentaires:</b> '+meta.comment+'</div>';
+    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">ENDEAVOUR MINING</div>'+
+    '<h2 style="text-align:center;font-size:15px;color:#2b3a4a;margin-bottom:10px;">'+(meta.shift==="Night"?"NIGHT":"DAY")+' SHIFT OIL REPORT</h2>'+
+    '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>ST:</b> '+meta.st+' &nbsp; <b>Date:</b> '+fmtDate(meta.date)+'</div>'+
+    '<div style="overflow-x:auto;"><table style="border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;"><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+
+    '<div style="font-size:12px;color:#3a2c12;margin-bottom:4px;"><b>Truck Operator:</b> '+meta.op+'</div>'+
+    '<div style="font-size:12px;color:#3a2c12;margin-bottom:4px;"><b>Supervisor:</b> '+meta.sup+'</div>'+
+    '<div style="font-size:12px;color:#3a2c12;"><b>Commentaires:</b> '+meta.comment+'</div>';
   document.getElementById("oil-out").style.display="block";
   document.getElementById("oil-out").scrollIntoView({behavior:"smooth"});
   toast("Document genere");
@@ -930,9 +931,9 @@ function buildOilPDF(){
   var doc=new JsPDF({unit:"mm",format:"a4",orientation:"landscape"});
   var m=lastOil.meta, rows=lastOil.rows;
   var W=297, x=10, y=16;
-  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(26,42,74);
+  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(43,58,74);
   doc.text((m.shift==="Night"?"NIGHT":"DAY")+" SHIFT OIL REPORT",x,y); y+=8;
-  doc.setFontSize(11); doc.setFont("helvetica","normal"); doc.setTextColor(26,58,106);
+  doc.setFontSize(11); doc.setFont("helvetica","normal"); doc.setTextColor(58,44,18);
   doc.text("ST: "+m.st+"     Date: "+fmtDate(m.date),x,y); y+=7;
   var allCols=OIL_FLUIDS.concat(OIL_COMP);
   var cols=[];
@@ -944,32 +945,32 @@ function buildOilPDF(){
   if(!cols.length) cols=["-"];
   var rigW=20;
   var colW=(W-2*x-rigW)/cols.length;
-  // header
+  // header (gris-bleu comme les autres rapports)
   var cx=x;
-  doc.setFillColor(43,58,74); doc.rect(cx,y,rigW,12,"F");
-  doc.setDrawColor(90,104,118); doc.rect(cx,y,rigW,12);
-  doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont("helvetica","bold");
+  doc.setFillColor(125,141,155); doc.rect(cx,y,rigW,12,"F");
+  doc.setDrawColor(106,90,58); doc.rect(cx,y,rigW,12);
+  doc.setTextColor(12,20,25); doc.setFontSize(7); doc.setFont("helvetica","bold");
   doc.text("Rig",cx+rigW/2,y+7,{align:"center"});
   cx+=rigW;
   for(var c=0;c<cols.length;c++){
-    doc.setFillColor(43,58,74); doc.rect(cx,y,colW,12,"F"); doc.rect(cx,y,colW,12);
+    doc.setFillColor(125,141,155); doc.rect(cx,y,colW,12,"F"); doc.rect(cx,y,colW,12);
     var lbl=doc.splitTextToSize(cols[c],colW-1);
     doc.text(lbl,cx+colW/2,y+6,{align:"center"});
     cx+=colW;
   }
   y+=12;
-  // rows
+  // rows (fond creme)
   doc.setFont("helvetica","normal");
   for(var i=0;i<rows.length;i++){
     var r=rows[i];
     cx=x;
-    doc.setFillColor(238,242,247); doc.rect(cx,y,rigW,8,"F"); doc.setDrawColor(154,138,100); doc.rect(cx,y,rigW,8);
-    doc.setTextColor(26,42,74); doc.setFont("helvetica","bold"); doc.setFontSize(8);
+    doc.setFillColor(247,240,224); doc.rect(cx,y,rigW,8,"F"); doc.setDrawColor(154,138,100); doc.rect(cx,y,rigW,8);
+    doc.setTextColor(20,16,10); doc.setFont("helvetica","bold"); doc.setFontSize(8);
     doc.text(r.rig,cx+rigW/2,y+5,{align:"center"});
     cx+=rigW;
-    doc.setFont("helvetica","bold"); doc.setTextColor(26,58,106);
+    doc.setFont("helvetica","bold"); doc.setTextColor(20,16,10);
     for(var k=0;k<cols.length;k++){
-      doc.setFillColor(255,255,255); doc.rect(cx,y,colW,8,"F"); doc.rect(cx,y,colW,8);
+      doc.setFillColor(255,253,247); doc.rect(cx,y,colW,8,"F"); doc.rect(cx,y,colW,8);
       var v=r.vals[cols[k]]||"";
       if(v) doc.text(String(v),cx+colW/2,y+5,{align:"center"});
       cx+=colW;
@@ -977,7 +978,7 @@ function buildOilPDF(){
     y+=8;
   }
   y+=8;
-  doc.setTextColor(26,58,106); doc.setFontSize(10); doc.setFont("helvetica","bold");
+  doc.setTextColor(58,44,18); doc.setFontSize(10); doc.setFont("helvetica","bold");
   doc.text("Truck Operator: "+m.op,x,y);
   doc.text("Supervisor: "+m.sup,x+120,y); y+=7;
   doc.setFont("helvetica","normal");
