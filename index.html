@@ -891,17 +891,25 @@ function genOil(){
   lastOil={rows:rows,meta:meta};
   DB.push({type:"Oil",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
   saveDB();
-  // apercu ecran (tableau condense)
+  // colonnes utilisees seulement (au moins une machine a une valeur)
   var allCols=OIL_FLUIDS.concat(OIL_COMP);
+  var usedCols=[];
+  for(var u=0;u<allCols.length;u++){
+    var used=false;
+    for(var v2=0;v2<rows.length;v2++){ if(rows[v2].vals[allCols[u]]){ used=true; break; } }
+    if(used) usedCols.push(allCols[u]);
+  }
+  if(!usedCols.length) usedCols=["(aucune valeur)"];
+  // apercu ecran (tableau condense)
   var th='<th style="border:1px solid #5a6876;padding:4px;background:#2b3a4a;color:#fff;font-size:9px;">Rig</th>';
-  for(var c=0;c<allCols.length;c++){ th+='<th style="border:1px solid #5a6876;padding:4px;background:#2b3a4a;color:#fff;font-size:8px;">'+allCols[c]+'</th>'; }
+  for(var c=0;c<usedCols.length;c++){ th+='<th style="border:1px solid #5a6876;padding:4px;background:#2b3a4a;color:#fff;font-size:8px;">'+usedCols[c]+'</th>'; }
   var tr="";
   for(var i=0;i<rows.length;i++){
     var r=rows[i];
     tr+='<tr><td style="border:1px solid #9a8a64;padding:4px;font-weight:700;background:#eef2f7;font-size:9px;text-align:center;">'+r.rig+'</td>';
-    for(var k=0;k<allCols.length;k++){
-      var v=r.vals[allCols[k]]||"";
-      tr+='<td style="border:1px solid #9a8a64;padding:4px;text-align:center;font-size:9px;color:#1a3a6a;font-weight:700;">'+v+'</td>';
+    for(var k=0;k<usedCols.length;k++){
+      var vv=r.vals[usedCols[k]]||"";
+      tr+='<td style="border:1px solid #9a8a64;padding:4px;text-align:center;font-size:9px;color:#1a3a6a;font-weight:700;">'+vv+'</td>';
     }
     tr+='</tr>';
   }
@@ -927,8 +935,15 @@ function buildOilPDF(){
   doc.setFontSize(11); doc.setFont("helvetica","normal"); doc.setTextColor(26,58,106);
   doc.text("ST: "+m.st+"     Date: "+fmtDate(m.date),x,y); y+=7;
   var allCols=OIL_FLUIDS.concat(OIL_COMP);
-  var rigW=18;
-  var colW=(W-2*x-rigW)/allCols.length;
+  var cols=[];
+  for(var u=0;u<allCols.length;u++){
+    var used=false;
+    for(var v2=0;v2<rows.length;v2++){ if(rows[v2].vals[allCols[u]]){ used=true; break; } }
+    if(used) cols.push(allCols[u]);
+  }
+  if(!cols.length) cols=["-"];
+  var rigW=20;
+  var colW=(W-2*x-rigW)/cols.length;
   // header
   var cx=x;
   doc.setFillColor(43,58,74); doc.rect(cx,y,rigW,12,"F");
@@ -936,9 +951,9 @@ function buildOilPDF(){
   doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont("helvetica","bold");
   doc.text("Rig",cx+rigW/2,y+7,{align:"center"});
   cx+=rigW;
-  for(var c=0;c<allCols.length;c++){
+  for(var c=0;c<cols.length;c++){
     doc.setFillColor(43,58,74); doc.rect(cx,y,colW,12,"F"); doc.rect(cx,y,colW,12);
-    var lbl=doc.splitTextToSize(allCols[c],colW-1);
+    var lbl=doc.splitTextToSize(cols[c],colW-1);
     doc.text(lbl,cx+colW/2,y+6,{align:"center"});
     cx+=colW;
   }
@@ -953,9 +968,9 @@ function buildOilPDF(){
     doc.text(r.rig,cx+rigW/2,y+5,{align:"center"});
     cx+=rigW;
     doc.setFont("helvetica","bold"); doc.setTextColor(26,58,106);
-    for(var k=0;k<allCols.length;k++){
+    for(var k=0;k<cols.length;k++){
       doc.setFillColor(255,255,255); doc.rect(cx,y,colW,8,"F"); doc.rect(cx,y,colW,8);
-      var v=r.vals[allCols[k]]||"";
+      var v=r.vals[cols[k]]||"";
       if(v) doc.text(String(v),cx+colW/2,y+5,{align:"center"});
       cx+=colW;
     }
