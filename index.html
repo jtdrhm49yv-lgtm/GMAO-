@@ -694,11 +694,19 @@ function downloadAllPDF(){
 function sharePDF(which,name){
   var doc=makePDF(which); if(!doc) return;
   var blob=doc.output("blob");
+  var sizeMB=blob.size/1048576;
   var file=new File([blob],name+".pdf",{type:"application/pdf"});
+  // Si le fichier est trop gros (>10 Mo), le partage iPhone echoue souvent: on telecharge directement
+  if(sizeMB>10){
+    downloadBlob(blob,name+".pdf");
+    toast("PDF lourd ("+sizeMB.toFixed(1)+" Mo) telecharge. Envoie-le depuis tes fichiers.");
+    return;
+  }
   if(navigator.canShare&&navigator.canShare({files:[file]})){
+    toast("Ouverture du partage...");
     navigator.share({files:[file],title:name}).then(function(){toast("Partage");}).catch(function(e){
       if(e&&e.name==="AbortError") return;
-      downloadBlob(blob,name+".pdf"); toast("PDF telecharge");
+      downloadBlob(blob,name+".pdf"); toast("Partage impossible - PDF telecharge");
     });
   } else {
     downloadBlob(blob,name+".pdf"); toast("PDF telecharge");
@@ -1122,14 +1130,14 @@ function compressImage(file,cb){
   reader.onload=function(e){
     var img=new Image();
     img.onload=function(){
-      var max=1000;
+      var max=720;
       var w=img.width, h=img.height;
       if(w>h&&w>max){ h=Math.round(h*max/w); w=max; }
       else if(h>=w&&h>max){ w=Math.round(w*max/h); h=max; }
       var canvas=document.createElement("canvas");
       canvas.width=w; canvas.height=h;
       canvas.getContext("2d").drawImage(img,0,0,w,h);
-      cb(canvas.toDataURL("image/jpeg",0.6));
+      cb(canvas.toDataURL("image/jpeg",0.5));
     };
     img.src=e.target.result;
   };
