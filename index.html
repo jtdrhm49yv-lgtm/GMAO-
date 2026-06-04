@@ -153,6 +153,11 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 
   <div class="view" id="v-hist">
     <div class="page-title">Historique</div>
+    <div class="field"><label>Filtrer par machine</label>
+      <select id="hist-filter" onchange="renderHist()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;">
+        <option value="">Toutes les machines</option>
+      </select>
+    </div>
     <div class="card"><div class="card-body" id="hist-body"><div class="empty"><div class="ei">&#128193;</div>Aucune donnee enregistree</div></div></div>
     <button class="btn btn-red" onclick="clearHist()">Vider l historique</button>
   </div>
@@ -256,6 +261,13 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
       <button class="btn btn-wa" onclick="shareAllPDF()">Partager tous les PDF</button>
       <button class="btn btn-amber" onclick="downloadAllPDF()">Telecharger tous les PDF</button>
     </div>
+    <div class="wa-box" style="background:rgba(56,182,255,0.06);border-color:rgba(56,182,255,0.2);">
+      <div class="wa-box-t" style="color:var(--blue);">Sauvegarde des donnees</div>
+      <div style="font-size:11.5px;color:var(--text3);margin-bottom:10px;">Exporte ton historique dans un fichier de sauvegarde. Garde ce fichier : tu pourras le reimporter si tu changes de telephone ou vides le cache.</div>
+      <button class="btn" style="background:var(--blue);color:#fff;" onclick="exportData()">Exporter mes donnees</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">Importer une sauvegarde</button>
+      <input type="file" id="import-file" accept=".json,application/json" style="display:none;" onchange="importData(this)">
+    </div>
     <div class="card"><div class="card-body" style="font-size:12.5px;line-height:1.6;color:var(--text3);">
       <p><b style="color:var(--amber);">Note :</b> les donnees sont stockees sur ton telephone uniquement. Pour partager sur WhatsApp, ouvre l app dans Safari ou Chrome (pas dans la fenetre integree).</p>
     </div></div>
@@ -274,6 +286,8 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 </div>
 
 <div class="toast" id="toast"></div>
+<datalist id="dl-failure"></datalist>
+<datalist id="dl-action"></datalist>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -290,6 +304,57 @@ var TECHS = ["Abdoulaye Ndiaye","Abou Ba","Adama Yague","Babacar Badara Diop","B
 var DB;
 try { DB = JSON.parse(localStorage.getItem("gmao_v3") || "[]"); if(!Array.isArray(DB)) DB = []; } catch(e){ DB = []; }
 function saveDB(){ try{ localStorage.setItem("gmao_v3", JSON.stringify(DB)); }catch(e){ toast("Memoire pleine - le rapport marche mais ne sera pas garde dans l historique"); } }
+var PREFS={};
+try{ PREFS=JSON.parse(localStorage.getItem("gmao_prefs")||"{}"); if(typeof PREFS!=="object"||!PREFS) PREFS={}; }catch(e){ PREFS={}; }
+function savePref(key,val){ if(!val) return; PREFS[key]=val; try{ localStorage.setItem("gmao_prefs",JSON.stringify(PREFS)); }catch(e){} }
+function applyPref(id,key){ var el=document.getElementById(id); if(el&&!el.value&&PREFS[key]) el.value=PREFS[key]; }
+// ===== Suggestions (autocompletion failure/action) =====
+var SUGG={failure:[],action:[]};
+try{ var sv=JSON.parse(localStorage.getItem("gmao_sugg")||"{}"); if(sv&&typeof sv==="object"){ if(Array.isArray(sv.failure))SUGG.failure=sv.failure; if(Array.isArray(sv.action))SUGG.action=sv.action; } }catch(e){}
+function addSugg(type,val){
+  val=(val||"").trim();
+  if(!val||val.length<2) return;
+  if(SUGG[type].indexOf(val)>=0) return;
+  SUGG[type].unshift(val);
+  if(SUGG[type].length>100) SUGG[type]=SUGG[type].slice(0,100);
+  try{ localStorage.setItem("gmao_sugg",JSON.stringify(SUGG)); }catch(e){}
+  refreshDatalist(type);
+}
+function refreshDatalist(type){
+  var dl=document.getElementById("dl-"+type);
+  if(!dl) return;
+  dl.innerHTML="";
+  for(var i=0;i<SUGG[type].length;i++){ var o=document.createElement("option"); o.value=SUGG[type][i]; dl.appendChild(o); }
+}
+function exportData(){
+  try{
+    var data=JSON.stringify(DB);
+    var blob=new Blob([data],{type:"application/json"});
+    var d=new Date();
+    var fname="GMAO_sauvegarde_"+d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)+".json";
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+    toast("Sauvegarde exportee : "+fname);
+  }catch(e){ toast("Erreur export"); }
+}
+function importData(input){
+  var file=input.files[0];
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var imported=JSON.parse(e.target.result);
+      if(!Array.isArray(imported)) throw new Error("format");
+      if(!confirm("Importer "+imported.length+" rapport(s) ? Cela remplacera ton historique actuel.")){ input.value=""; return; }
+      DB=imported; saveDB();
+      if(document.getElementById("v-hist").classList.contains("active")) renderHist();
+      toast("Sauvegarde importee : "+imported.length+" rapport(s)");
+    }catch(err){ toast("Fichier invalide"); }
+    input.value="";
+  };
+  reader.readAsText(file);
+}
 
 function toast(m){ var t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},2500); }
 
@@ -327,8 +392,8 @@ function addPanne(data){
   body.appendChild(fieldMachine(data.machine,t));
   body.appendChild(fieldTime("Debut","p-s",data.start));
   body.appendChild(fieldTime("Fin","p-e",data.end));
-  body.appendChild(fieldInput("Failure","p-f","ex: Engine off",data.failure));
-  body.appendChild(fieldInput("Action","p-a","ex: Fuel shut off valve replaced",data.action));
+  body.appendChild(fieldInput("Failure","p-f","ex: Engine off",data.failure,"dl-failure"));
+  body.appendChild(fieldInput("Action","p-a","ex: Fuel shut off valve replaced",data.action,"dl-action"));
   body.appendChild(fieldTechs(data.techs));
   d.appendChild(head); d.appendChild(body);
   list.appendChild(d);
@@ -379,10 +444,11 @@ function fieldTechs(val){
   f.appendChild(l); f.appendChild(tags); f.appendChild(sel); f.appendChild(free); f.appendChild(addBtn);
   return f;
 }
-function fieldInput(label,cls,ph,val){
+function fieldInput(label,cls,ph,val,listId){
   var f=document.createElement("div"); f.className="field";
   var l=document.createElement("label"); l.textContent=label;
   var i=document.createElement("input"); i.type="text"; i.className=cls; i.placeholder=ph; if(val) i.value=val;
+  if(listId) i.setAttribute("list",listId);
   f.appendChild(l); f.appendChild(i); return f;
 }
 function fieldTime(label,cls,val){
@@ -419,6 +485,10 @@ function genPanne(){
     lead:document.getElementById("p-lead").value||"-",sup:document.getElementById("p-sup").value||"-",site:document.getElementById("p-site").value||"-"};
   lastPanne={rows:rows,meta:meta};
   DB.push({type:"Panne",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
+  for(var sg=0;sg<rows.length;sg++){ addSugg("failure",rows[sg].failure); addSugg("action",rows[sg].action); }
+  savePref("lead",document.getElementById("p-lead").value);
+  savePref("sup",document.getElementById("p-sup").value);
+  savePref("site",document.getElementById("p-site").value);
   saveDB();
 
   var tr="";
@@ -502,6 +572,8 @@ function genDaily(){
     shift:document.getElementById("d-shift").value,lead:document.getElementById("d-lead").value||"-",forman:document.getElementById("d-forman").value||"-",
     comment:document.getElementById("d-comment").value||"-"};
   lastDaily={rows:rows,meta:meta};
+  savePref("dlead",document.getElementById("d-lead").value);
+  savePref("dforman",document.getElementById("d-forman").value);
   DB.push({type:"Daily",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
   saveDB();
 
@@ -1065,7 +1137,7 @@ function addWO(){
   // defaut
   var fD=document.createElement("div"); fD.className="field";
   var lD=document.createElement("label"); lD.textContent="Defaut";
-  var iD=document.createElement("input"); iD.type="text"; iD.className="wo-def"; iD.placeholder="ex: Fuite hydraulique";
+  var iD=document.createElement("input"); iD.type="text"; iD.className="wo-def"; iD.placeholder="ex: Fuite hydraulique"; iD.setAttribute("list","dl-failure");
   iD.style.cssText="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;";
   fD.appendChild(lD); fD.appendChild(iD); body.appendChild(fD);
   // statut
@@ -1187,6 +1259,7 @@ function genWO(){
   var meta={date:document.getElementById("wo-date").value,by:document.getElementById("wo-by").value||"-"};
   lastWO={rows:rows,meta:meta};
   DB.push({type:"WorkOrder",date:meta.date,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
+  for(var sg=0;sg<rows.length;sg++){ addSugg("failure",rows[sg].def); }
   saveDB();
   var groups=woGroupByMachine(rows);
   var tr="";
@@ -1223,10 +1296,23 @@ function genWO(){
     }
     gallery+='</div>';
   }
+  // compteur de statuts
+  var nTodo=0,nProg=0,nDone=0;
+  for(var sc=0;sc<rows.length;sc++){
+    if(rows[sc].stat==="Termine") nDone++;
+    else if(rows[sc].stat==="En cours") nProg++;
+    else nTodo++;
+  }
+  var summary='<div style="display:flex;gap:6px;margin-bottom:10px;">'+
+    '<div style="flex:1;text-align:center;background:rgba(240,72,72,0.12);border-radius:6px;padding:6px;"><div style="font-size:18px;font-weight:800;color:#f04848;">'+nTodo+'</div><div style="font-size:9px;color:#3a2c12;">A FAIRE</div></div>'+
+    '<div style="flex:1;text-align:center;background:rgba(240,168,50,0.12);border-radius:6px;padding:6px;"><div style="font-size:18px;font-weight:800;color:#c98a1a;">'+nProg+'</div><div style="font-size:9px;color:#3a2c12;">EN COURS</div></div>'+
+    '<div style="flex:1;text-align:center;background:rgba(34,201,122,0.12);border-radius:6px;padding:6px;"><div style="font-size:18px;font-weight:800;color:#1a7a4e;">'+nDone+'</div><div style="font-size:9px;color:#3a2c12;">TERMINE</div></div>'+
+    '</div>';
   document.getElementById("doc-w").innerHTML=
     '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">ENDEAVOUR MINING</div>'+
     '<h2 style="text-align:center;font-size:15px;color:#2b3a4a;margin-bottom:10px;">WORK ORDER</h2>'+
     '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>Date:</b> '+fmtDate(meta.date)+' &nbsp; <b>Cree par:</b> '+meta.by+'</div>'+
+    summary+
     '<table style="width:100%;border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;">'+
     '<thead><tr style="background:#7d8d9b;color:#0c1419;font-size:11px;"><th style="border:1px solid #5a6876;padding:6px;">Machine</th><th style="border:1px solid #5a6876;padding:6px;">Defaut</th><th style="border:1px solid #5a6876;padding:6px;">Statut</th><th style="border:1px solid #5a6876;padding:6px;">Technicien</th></tr></thead>'+
     '<tbody>'+tr+'</tbody></table>'+
@@ -1336,26 +1422,80 @@ function renderHist(){
       var r=rows[j];
       if(!r.machine) continue;
       if(!byMachine[r.machine]) byMachine[r.machine]=[];
-      byMachine[r.machine].push(r);
+      byMachine[r.machine].push({p:r,dbi:i,rowi:j});
     }
   }
   var machines=Object.keys(byMachine).sort();
+  // remplir le filtre (toutes les machines connues)
+  var filterEl=document.getElementById("hist-filter");
+  var selected=filterEl?filterEl.value:"";
+  if(filterEl){
+    var cur=filterEl.value;
+    filterEl.innerHTML='<option value="">Toutes les machines</option>';
+    for(var fm=0;fm<machines.length;fm++){
+      var opt=document.createElement("option"); opt.value=machines[fm]; opt.textContent=machines[fm];
+      if(machines[fm]===cur) opt.selected=true;
+      filterEl.appendChild(opt);
+    }
+    selected=filterEl.value;
+  }
   if(!machines.length){ b.innerHTML='<div class="empty"><div class="ei">&#128193;</div>Aucune panne enregistree</div>'; return; }
-  var h="";
-  for(var k=0;k<machines.length;k++){
-    var m=machines[k];
+  // appliquer le filtre pour l affichage detaille
+  var shownMachines = selected ? [selected] : machines;
+  // ===== STATS =====
+  var stats=[];
+  for(var s=0;s<machines.length;s++){
+    var ms=machines[s], ml=byMachine[ms], mt=0;
+    for(var z=0;z<ml.length;z++){ mt+=parseInt(ml[z].p.dur)||0; }
+    stats.push({machine:ms,count:ml.length,total:mt});
+  }
+  // tri par temps d arret decroissant pour trouver la plus problematique
+  var byDown=stats.slice().sort(function(a,b){ return b.total-a.total; });
+  var worst=byDown[0];
+  var grandTotal=0, grandCount=0;
+  for(var gt=0;gt<stats.length;gt++){ grandTotal+=stats[gt].total; grandCount+=stats[gt].count; }
+  var statsHtml='<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:16px;">'+
+    '<div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:10px;">Statistiques</div>'+
+    '<div style="background:rgba(240,72,72,0.1);border:1px solid rgba(240,72,72,0.3);border-radius:8px;padding:10px;margin-bottom:10px;">'+
+    '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:3px;">Machine la plus problematique</div>'+
+    '<div style="font-size:18px;font-weight:800;color:var(--red);">'+worst.machine+'</div>'+
+    '<div style="font-size:12px;color:var(--text2);">'+worst.count+' panne(s) &mdash; '+fmtDur(worst.total)+' d arret</div></div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">'+
+    '<div style="flex:1;text-align:center;background:var(--surface3);border-radius:8px;padding:8px;"><div style="font-size:20px;font-weight:800;color:var(--amber);">'+grandCount+'</div><div style="font-size:10px;color:var(--text3);">Pannes totales</div></div>'+
+    '<div style="flex:1;text-align:center;background:var(--surface3);border-radius:8px;padding:8px;"><div style="font-size:20px;font-weight:800;color:var(--blue);">'+fmtDur(grandTotal)+'</div><div style="font-size:10px;color:var(--text3);">Arret total</div></div>'+
+    '</div>';
+  // classement par machine
+  statsHtml+='<div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Classement par temps d arret :</div>';
+  for(var rk=0;rk<byDown.length;rk++){
+    var st=byDown[rk];
+    var pct=worst.total>0?Math.round(st.total/worst.total*100):0;
+    statsHtml+='<div style="margin-bottom:6px;">'+
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;"><span style="font-weight:700;color:var(--text);">'+st.machine+'</span><span style="color:var(--text3);font-family:monospace;">'+st.count+' panne(s) - '+fmtDur(st.total)+'</span></div>'+
+    '<div style="background:var(--surface3);border-radius:3px;height:5px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--amber);"></div></div>'+
+    '</div>';
+  }
+  statsHtml+='</div>';
+  // ===== DETAIL =====
+  var h=statsHtml;
+  for(var k=0;k<shownMachines.length;k++){
+    var m=shownMachines[k];
     var list=byMachine[m];
     var total=0;
-    for(var x=0;x<list.length;x++){ total+=parseInt(list[x].dur)||0; }
+    for(var x=0;x<list.length;x++){ total+=parseInt(list[x].p.dur)||0; }
     h+='<div style="border-bottom:1px solid var(--border);padding:12px 0;">'+
     '<div style="font-weight:800;color:var(--green);font-size:16px;margin-bottom:8px;">'+m+
     ' &mdash; <span style="color:var(--amber);">Total: '+fmtDur(total)+'</span></div>';
     for(var y=0;y<list.length;y++){
-      var p=list[y];
+      var p=list[y].p;
+      var ref=list[y].dbi+"_"+list[y].rowi;
       h+='<div style="background:var(--surface2);border-radius:8px;padding:9px 11px;margin-bottom:6px;font-size:12.5px;">'+
       '<div style="color:var(--red);font-weight:600;">'+(p.failure||"-")+'</div>'+
       '<div style="color:var(--text2);">Action : '+(p.action||"-")+'</div>'+
       '<div style="color:var(--blue);font-family:monospace;">Duree : '+fmtDur(p.dur)+'</div>'+
+      '<div style="display:flex;gap:8px;margin-top:7px;">'+
+      '<button class="btn btn-sm" style="background:var(--surface3);color:var(--blue);margin:0;" onclick="editPanne(\''+ref+'\')">Modifier</button>'+
+      '<button class="btn btn-sm" style="background:rgba(240,72,72,0.15);color:var(--red);margin:0;" onclick="deletePanne(\''+ref+'\')">Supprimer</button>'+
+      '</div>'+
       '</div>';
     }
     h+='</div>';
@@ -1363,12 +1503,41 @@ function renderHist(){
   b.innerHTML=h;
 }
 function clearHist(){ if(confirm("Vider tout lhistorique ?")){ DB=[]; saveDB(); renderHist(); toast("Historique vide"); } }
+function deletePanne(ref){
+  var parts=ref.split("_"); var dbi=parseInt(parts[0]), rowi=parseInt(parts[1]);
+  if(!DB[dbi]||!DB[dbi].rows||!DB[dbi].rows[rowi]) return;
+  if(!confirm("Supprimer cette panne ?")) return;
+  DB[dbi].rows.splice(rowi,1);
+  if(DB[dbi].rows.length===0){ DB.splice(dbi,1); }
+  else { DB[dbi].count=DB[dbi].rows.length; }
+  saveDB(); renderHist(); toast("Panne supprimee");
+}
+function editPanne(ref){
+  var parts=ref.split("_"); var dbi=parseInt(parts[0]), rowi=parseInt(parts[1]);
+  if(!DB[dbi]||!DB[dbi].rows||!DB[dbi].rows[rowi]) return;
+  var p=DB[dbi].rows[rowi];
+  var nf=prompt("Failure (panne) :",p.failure||"");
+  if(nf===null) return;
+  var na=prompt("Action corrective :",p.action||"");
+  if(na===null) return;
+  var nd=prompt("Duree en minutes :",p.dur||0);
+  if(nd===null) return;
+  p.failure=nf.trim(); p.action=na.trim();
+  var dn=parseInt(nd); p.dur=(isNaN(dn)||dn<0)?0:dn;
+  saveDB(); renderHist(); toast("Panne modifiee");
+}
 
 /* ===== INIT ===== */
 try{ document.getElementById("p-date").valueAsDate=new Date(); }catch(e){}
 try{ document.getElementById("d-date").valueAsDate=new Date(); }catch(e){}
 addPanne();
 addDaily();
+// pre-remplissage des noms habituels
+try{
+  applyPref("p-lead","lead"); applyPref("p-sup","sup"); applyPref("p-site","site");
+  applyPref("d-lead","dlead"); applyPref("d-forman","dforman");
+  refreshDatalist("failure"); refreshDatalist("action");
+}catch(e){}
 document.getElementById("sub").textContent="GMAO Pret";
 // Renforce le blocage de traduction (au cas ou le navigateur tente de traduire)
 try {
