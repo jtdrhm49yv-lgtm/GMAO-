@@ -258,11 +258,10 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
   <div class="view" id="v-info">
     <div class="page-title">Envoyer <span>les rapports</span></div>
     <div class="wa-box">
-      <div class="wa-box-t">Envoyer TOUS les rapports remplis</div>
-      <div style="font-size:11.5px;color:var(--text3);margin-bottom:10px;">Genere et partage en PDF tous les rapports que tu as crees (Panne, Daily, MDS, Huile). Seuls les rapports remplis sont envoyes.</div>
-      <button class="btn btn-wa" onclick="shareAllPDF()">Partager tous les PDF</button>
-      <button class="btn btn-amber" onclick="downloadAllPDF()">Telecharger tous les PDF</button>
-      <button class="btn btn-green" onclick="downloadAllImages()">Telecharger tous en images (galerie)</button>
+      <div class="wa-box-t">Partager les rapports (un par un)</div>
+      <div style="font-size:11.5px;color:var(--text3);margin-bottom:10px;">Appuie sur un rapport pour l envoyer sur WhatsApp. Envoie-les un par un, a ton rythme. Seuls les rapports remplis apparaissent ici.</div>
+      <div id="send-list"></div>
+      <button class="btn btn-amber" onclick="downloadAllPDF()" style="margin-top:6px;">Telecharger tous les PDF (secours)</button>
     </div>
     <div class="wa-box" style="background:rgba(56,182,255,0.06);border-color:rgba(56,182,255,0.2);">
       <div class="wa-box-t" style="color:var(--blue);">Sauvegarde des donnees</div>
@@ -298,8 +297,6 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 <datalist id="dl-action"></datalist>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 var WA_NUMBER = "221779515790";
@@ -400,6 +397,7 @@ function nav(v){
   if(v==="mds") initMDS();
   if(v==="oil") initOil();
   if(v==="wo") initWO();
+  if(v==="info") renderSendList();
   window.scrollTo(0,0);
 }
 
@@ -760,93 +758,50 @@ function buildMergedPDF(){
   for(var i=1;i<builders.length;i++){ builders[i](doc); }
   return doc;
 }
-function shareAllPDF(){
-  var reports=collectAllReports();
-  if(!reports.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
-  toast("Envoi de "+reports.length+" rapport(s)...");
-  shareNextReport(reports,0);
-}
 function niceName(n){ return n.replace(/_/g," "); }
-function shareNextReport(reports,idx){
-  if(idx>=reports.length){ toast("Tous les rapports envoyes"); return; }
+// Affiche un bouton de partage par rapport genere (envoi un par un vers WhatsApp)
+function renderSendList(){
+  var box=document.getElementById("send-list");
+  if(!box) return;
+  var reports=collectAllReports();
+  if(!reports.length){
+    box.innerHTML='<div style="text-align:center;color:var(--text3);padding:14px;font-size:13px;">Aucun rapport genere pour le moment. Remplis et genere un rapport (Panne, Daily, MDS, Huile, Work Order).</div>';
+    return;
+  }
+  var h="";
+  for(var i=0;i<reports.length;i++){
+    h+='<button class="btn btn-wa" style="margin-bottom:8px;" onclick="shareOneReport('+i+')">Partager : '+niceName(reports[i].name)+'</button>';
+  }
+  box.innerHTML=h;
+}
+// Partage UN rapport (declenche par l appui de l utilisateur -> jamais d erreur WhatsApp)
+function shareOneReport(idx){
+  var reports=collectAllReports();
+  if(idx<0||idx>=reports.length){ toast("Rapport introuvable"); return; }
   var rep=reports[idx];
   var blob=rep.doc.output("blob");
   var fname=rep.name+".pdf";
   var sizeMB=blob.size/1048576;
-  // PDF trop lourd: telecharge et passe au suivant
   if(sizeMB>10){
     downloadBlob(blob,fname);
-    toast("Rapport "+(idx+1)+" lourd, telecharge");
-    nextWithConfirm(reports,idx);
+    toast("Rapport lourd ("+sizeMB.toFixed(1)+" Mo) telecharge. Envoie-le depuis tes fichiers.");
+    if(rep.name==="Work_Order") askClearWOPhotos();
     return;
   }
   var file=new File([blob],fname,{type:"application/pdf"});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
     navigator.share({files:[file],title:rep.name}).then(function(){
-      nextWithConfirm(reports,idx);
+      if(rep.name==="Work_Order") askClearWOPhotos();
     }).catch(function(e){
-      if(e&&e.name==="AbortError"){ nextWithConfirm(reports,idx); return; }
-      downloadBlob(blob,fname);
-      nextWithConfirm(reports,idx);
+      if(e&&e.name==="AbortError") return;
+      downloadBlob(blob,fname); toast("Partage impossible - PDF telecharge");
     });
   } else {
-    downloadBlob(blob,fname);
-    nextWithConfirm(reports,idx);
+    downloadBlob(blob,fname); toast("PDF telecharge");
   }
 }
-// Attend un peu (pour laisser WhatsApp finir) puis demande confirmation avant le rapport suivant
-function nextWithConfirm(reports,idx){
-  if(idx+1>=reports.length){ setTimeout(function(){ toast("Tous les rapports envoyes"); },800); return; }
-  var nextRep=reports[idx+1];
-  // delai pour laisser WhatsApp terminer l envoi precedent
-  setTimeout(function(){
-    if(confirm("Rapport \""+niceName(reports[idx].name)+"\" envoye.\n\nEnvoyer maintenant le suivant : \""+niceName(nextRep.name)+"\" ?")){
-      shareNextReport(reports,idx+1);
-    } else {
-      toast("Envoi arrete. Tu peux relancer quand tu veux.");
-    }
-  },1500);
-}
-// Telecharge chaque rapport genere en IMAGE (PNG) -> va dans la galerie
-function collectReportPreviews(){
-  // retourne les apercus HTML des rapports generes
-  var items=[];
-  if(lastPanne) items.push({id:"doc-p",name:"Rapport_Panne"});
-  if(lastDaily) items.push({id:"doc-d",name:"Daily_Service"});
-  if(lastMDS) items.push({id:"doc-m",name:"MDS_Compliance"});
-  if(lastOil) items.push({id:"doc-o",name:"Oil_Report"});
-  if(lastWO) items.push({id:"doc-w",name:"Work_Order"});
-  return items;
-}
-function downloadAllImages(){
-  if(typeof html2canvas==="undefined"){ toast("Patiente, chargement..."); return; }
-  var items=collectReportPreviews();
-  if(!items.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
-  toast("Creation des images...");
-  renderImagesSeq(items,0);
-}
-function renderImagesSeq(items,idx){
-  if(idx>=items.length){ toast(items.length+" image(s) telechargee(s) dans la galerie"); return; }
-  var src=document.getElementById(items[idx].id);
-  if(!src||!src.innerHTML.trim()){ renderImagesSeq(items,idx+1); return; }
-  // conteneur temporaire visible (hors ecran) avec fond creme comme les rapports
-  var holder=document.createElement("div");
-  holder.style.cssText="position:fixed;left:-9999px;top:0;width:780px;background:#fdf6e9;padding:24px;z-index:-1;";
-  holder.className="notranslate"; holder.setAttribute("translate","no");
-  holder.innerHTML=src.innerHTML;
-  document.body.appendChild(holder);
-  html2canvas(holder,{backgroundColor:"#fdf6e9",scale:2,useCORS:true}).then(function(canvas){
-    canvas.toBlob(function(blob){
-      if(blob) downloadBlob(blob,items[idx].name+".png");
-      document.body.removeChild(holder);
-      setTimeout(function(){ renderImagesSeq(items,idx+1); },500);
-    },"image/png");
-  }).catch(function(e){
-    if(holder.parentNode) document.body.removeChild(holder);
-    setTimeout(function(){ renderImagesSeq(items,idx+1); },500);
-  });
-}
-function downloadAllPDF(){  var reports=collectAllReports();
+function downloadAllPDF(){
+  var reports=collectAllReports();
   if(!reports.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
   for(var i=0;i<reports.length;i++){
     (function(rep,delay){
