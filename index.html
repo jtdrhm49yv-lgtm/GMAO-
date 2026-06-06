@@ -638,7 +638,7 @@ function getJsPDF(){
 // Construit le PDF Panne a partir des donnees
 function buildPannePDF(existingDoc){
   var JsPDF=getJsPDF();
-  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait",compress:true});
   if(existingDoc) doc.addPage("a4","portrait");
   var m=lastPanne.meta, rows=lastPanne.rows;
   var W=210, x=14, y=18;
@@ -684,7 +684,7 @@ function buildPannePDF(existingDoc){
 // Construit le PDF Daily a partir des donnees
 function buildDailyPDF(existingDoc){
   var JsPDF=getJsPDF();
-  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait",compress:true});
   if(existingDoc) doc.addPage("a4","portrait");
   var m=lastDaily.meta, rows=lastDaily.rows;
   var W=210, x=14, y=18;
@@ -956,7 +956,7 @@ function genMDS(){
 }
 function buildMDSPDF(existingDoc){
   var JsPDF=getJsPDF();
-  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait",compress:true});
   if(existingDoc) doc.addPage("a4","portrait");
   var m=lastMDS.meta, data=lastMDS.data;
   var W=210, x=14, y=18;
@@ -1125,7 +1125,7 @@ function genOil(){
 function buildOilPDF(existingDoc){
   var JsPDF=getJsPDF();
   // paysage pour le grand tableau
-  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"landscape"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"landscape",compress:true});
   if(existingDoc) doc.addPage("a4","landscape");
   var m=lastOil.meta, rows=lastOil.rows;
   var W=297, x=10, y=16;
@@ -1281,20 +1281,20 @@ function addThumb(container,dataUrl){
   x.onclick=function(){ wrap.remove(); };
   wrap.appendChild(img); wrap.appendChild(x); container.appendChild(wrap);
 }
-// Compresse une image (max 1000px, qualite 0.6) en dataURL JPEG
+// Compresse une image (max 600px, qualite 0.42) en dataURL JPEG - leger pour WhatsApp
 function compressImage(file,cb){
   var reader=new FileReader();
   reader.onload=function(e){
     var img=new Image();
     img.onload=function(){
-      var max=720;
+      var max=600;
       var w=img.width, h=img.height;
       if(w>h&&w>max){ h=Math.round(h*max/w); w=max; }
       else if(h>=w&&h>max){ w=Math.round(w*max/h); h=max; }
       var canvas=document.createElement("canvas");
       canvas.width=w; canvas.height=h;
       canvas.getContext("2d").drawImage(img,0,0,w,h);
-      cb(canvas.toDataURL("image/jpeg",0.5));
+      cb(canvas.toDataURL("image/jpeg",0.42));
     };
     img.src=e.target.result;
   };
@@ -1408,7 +1408,7 @@ function genWO(){
 }
 function buildWOPDF(existingDoc){
   var JsPDF=getJsPDF();
-  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait",compress:true});
   if(existingDoc) doc.addPage("a4","portrait");
   var m=lastWO.meta, rows=lastWO.rows;
   var W=210, x=14, y=18;
@@ -1480,7 +1480,7 @@ function buildWOPDF(existingDoc){
       for(var k=0;k<tk.photos.length;k++){
         if(px+pw>W-x){ px=x; y+=ph+3; }
         if(y+ph>285){ doc.addPage("a4","portrait"); y=18; px=x; }
-        try{ doc.addImage(tk.photos[k],"JPEG",px,y,pw,ph); }catch(e){}
+        try{ doc.addImage(tk.photos[k],"JPEG",px,y,pw,ph,undefined,"FAST"); }catch(e){}
         px+=pw+3;
       }
       y+=ph+6;
