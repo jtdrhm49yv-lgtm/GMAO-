@@ -760,9 +760,10 @@ function buildMergedPDF(){
 function shareAllPDF(){
   var reports=collectAllReports();
   if(!reports.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
-  toast("Envoi "+reports.length+" rapport(s) un par un...");
+  toast("Envoi de "+reports.length+" rapport(s)...");
   shareNextReport(reports,0);
 }
+function niceName(n){ return n.replace(/_/g," "); }
 function shareNextReport(reports,idx){
   if(idx>=reports.length){ toast("Tous les rapports envoyes"); return; }
   var rep=reports[idx];
@@ -773,27 +774,35 @@ function shareNextReport(reports,idx){
   if(sizeMB>10){
     downloadBlob(blob,fname);
     toast("Rapport "+(idx+1)+" lourd, telecharge");
-    setTimeout(function(){ shareNextReport(reports,idx+1); },1200);
+    nextWithConfirm(reports,idx);
     return;
   }
   var file=new File([blob],fname,{type:"application/pdf"});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
     navigator.share({files:[file],title:rep.name}).then(function(){
-      // partage ouvert pour ce rapport, on enchaine le suivant
-      setTimeout(function(){ shareNextReport(reports,idx+1); },900);
+      nextWithConfirm(reports,idx);
     }).catch(function(e){
-      if(e&&e.name==="AbortError"){
-        // l utilisateur a ferme: on passe quand meme au suivant
-        setTimeout(function(){ shareNextReport(reports,idx+1); },600);
-        return;
-      }
+      if(e&&e.name==="AbortError"){ nextWithConfirm(reports,idx); return; }
       downloadBlob(blob,fname);
-      setTimeout(function(){ shareNextReport(reports,idx+1); },900);
+      nextWithConfirm(reports,idx);
     });
   } else {
     downloadBlob(blob,fname);
-    setTimeout(function(){ shareNextReport(reports,idx+1); },900);
+    nextWithConfirm(reports,idx);
   }
+}
+// Attend un peu (pour laisser WhatsApp finir) puis demande confirmation avant le rapport suivant
+function nextWithConfirm(reports,idx){
+  if(idx+1>=reports.length){ setTimeout(function(){ toast("Tous les rapports envoyes"); },800); return; }
+  var nextRep=reports[idx+1];
+  // delai pour laisser WhatsApp terminer l envoi precedent
+  setTimeout(function(){
+    if(confirm("Rapport \""+niceName(reports[idx].name)+"\" envoye.\n\nEnvoyer maintenant le suivant : \""+niceName(nextRep.name)+"\" ?")){
+      shareNextReport(reports,idx+1);
+    } else {
+      toast("Envoi arrete. Tu peux relancer quand tu veux.");
+    }
+  },1500);
 }
 function downloadAllPDF(){
   var reports=collectAllReports();
