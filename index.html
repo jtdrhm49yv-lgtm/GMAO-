@@ -572,7 +572,7 @@ function addDaily(data){
   var fT=document.createElement("div"); fT.className="field";
   var lT=document.createElement("label"); lT.textContent="Type de service";
   var sT=document.createElement("select"); sT.className="d-type";
-  var types=["","Daily Service","Opportunity Time"];
+  var types=["","Daily Service","Opportunity Time","PM"];
   for(var k=0;k<types.length;k++){ var ot=document.createElement("option"); ot.value=types[k]; ot.textContent=types[k]||"-- Choisir --"; if(data.type===types[k])ot.selected=true; sT.appendChild(ot); }
   fT.appendChild(lT); fT.appendChild(sT);
   body.appendChild(fT);
