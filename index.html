@@ -8,7 +8,9 @@
 <meta name="googlebot" content="notranslate">
 <meta http-equiv="Content-Language" content="en">
 <meta name="robots" content="notranslate">
-<title>GMAO Endeavour Mining</title>
+<title>Drilling_GMAO</title>
+<meta name="apple-mobile-web-app-title" content="Drilling_GMAO">
+<meta name="application-name" content="Drilling_GMAO">
 <style>
 :root{
   --bg:#080f0c;--surface:#0f1a16;--surface2:#162219;--surface3:#1c2e24;
@@ -69,7 +71,7 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
   <div class="tb-logo">&#9881;</div>
   <div>
     <div class="tb-name">ENDEAVOUR MINING</div>
-    <div class="tb-sub" id="sub">GMAO Maintenance</div>
+    <div class="tb-sub" id="sub">Drilling GMAO</div>
   </div>
 </div>
 
@@ -344,7 +346,7 @@ function exportData(){
   }catch(e){ toast("Erreur export"); }
 }
 function exportCSV(){
-  var lines=["Date;Machine;Panne;Action;Duree (min);Techniciens;Shift"];
+  var lines=["Date;Machine;Failure;Action;Duration (min);Technicians;Shift"];
   for(var i=0;i<DB.length;i++){
     if(DB[i].type!=="Panne") continue;
     var rows=DB[i].rows||[];
@@ -620,7 +622,7 @@ function genDaily(){
     '<tbody>'+tr+'</tbody></table>'+
     '<div style="font-size:12px;color:#3a2c12;"><b>Daily Service Leading Hand:</b> '+meta.lead+'</div>'+
     '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Pit Maint Forman:</b> '+meta.forman+'</div>'+
-    '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Commentaires:</b> '+meta.comment+'</div>';
+    '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Comments:</b> '+meta.comment+'</div>';
   document.getElementById("daily-out").style.display="block";
   document.getElementById("daily-out").scrollIntoView({behavior:"smooth"});
   toast("Document genere");
@@ -633,9 +635,10 @@ function getJsPDF(){
 }
 
 // Construit le PDF Panne a partir des donnees
-function buildPannePDF(){
+function buildPannePDF(existingDoc){
   var JsPDF=getJsPDF();
-  var doc=new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  if(existingDoc) doc.addPage("a4","portrait");
   var m=lastPanne.meta, rows=lastPanne.rows;
   var W=210, x=14, y=18;
   // Titre
@@ -678,9 +681,10 @@ function buildPannePDF(){
 }
 
 // Construit le PDF Daily a partir des donnees
-function buildDailyPDF(){
+function buildDailyPDF(existingDoc){
   var JsPDF=getJsPDF();
-  var doc=new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  if(existingDoc) doc.addPage("a4","portrait");
   var m=lastDaily.meta, rows=lastDaily.rows;
   var W=210, x=14, y=18;
   doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(43,58,74);
@@ -711,7 +715,7 @@ function buildDailyPDF(){
   doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(60,44,18);
   doc.text("Daily Service Leading Hand: "+m.lead,x,y); y+=6;
   doc.text("Pit Maint Forman: "+m.forman,x,y); y+=6;
-  doc.text("Commentaires: "+(m.comment||"-"),x,y,{maxWidth:W-28});
+  doc.text("Comments: "+(m.comment||"-"),x,y,{maxWidth:W-28});
   return doc;
 }
 
@@ -737,44 +741,58 @@ function collectAllReports(){
   if(lastWO){ list.push({doc:buildWOPDF(),name:"Work_Order"}); }
   return list;
 }
+// Fusionne tous les rapports en UN seul PDF (chaque rapport sur sa/ses page(s))
+function buildMergedPDF(){
+  var JsPDF=getJsPDF();
+  if(!JsPDF) return null;
+  var builders=[];
+  if(lastPanne) builders.push(buildPannePDF);
+  if(lastDaily) builders.push(buildDailyPDF);
+  if(lastMDS) builders.push(buildMDSPDF);
+  if(lastOil) builders.push(buildOilPDF);
+  if(lastWO) builders.push(buildWOPDF);
+  if(!builders.length) return null;
+  // 1er rapport cree le doc, les suivants ajoutent leurs pages dedans
+  var doc=builders[0]();
+  for(var i=1;i<builders.length;i++){ builders[i](doc); }
+  return doc;
+}
 function shareAllPDF(){
   var reports=collectAllReports();
   if(!reports.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
-  var files=[];
-  for(var i=0;i<reports.length;i++){
-    var blob=reports[i].doc.output("blob");
-    files.push(new File([blob],reports[i].name+".pdf",{type:"application/pdf"}));
-  }
-  if(navigator.canShare&&navigator.canShare({files:files})){
-    navigator.share({files:files,title:"Rapports Endeavour Mining"}).then(function(){toast("Partage");}).catch(function(e){
-      if(e&&e.name==="AbortError") return;
-      // fallback: partage un par un
-      shareFilesOneByOne(reports,0);
-    });
-  } else if(navigator.canShare&&files.length&&navigator.canShare({files:[files[0]]})){
-    // l appareil n accepte qu un fichier a la fois
-    toast("Envoi un par un...");
-    shareFilesOneByOne(reports,0);
-  } else {
-    // pas de partage: telecharge tout
-    downloadAllPDF();
-  }
+  toast("Envoi "+reports.length+" rapport(s) un par un...");
+  shareNextReport(reports,0);
 }
-function shareFilesOneByOne(reports,idx){
-  if(idx>=reports.length){ toast("Termine"); return; }
-  var blob=reports[idx].doc.output("blob");
-  var file=new File([blob],reports[idx].name+".pdf",{type:"application/pdf"});
+function shareNextReport(reports,idx){
+  if(idx>=reports.length){ toast("Tous les rapports envoyes"); return; }
+  var rep=reports[idx];
+  var blob=rep.doc.output("blob");
+  var fname=rep.name+".pdf";
+  var sizeMB=blob.size/1048576;
+  // PDF trop lourd: telecharge et passe au suivant
+  if(sizeMB>10){
+    downloadBlob(blob,fname);
+    toast("Rapport "+(idx+1)+" lourd, telecharge");
+    setTimeout(function(){ shareNextReport(reports,idx+1); },1200);
+    return;
+  }
+  var file=new File([blob],fname,{type:"application/pdf"});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
-    navigator.share({files:[file],title:reports[idx].name}).then(function(){
-      shareFilesOneByOne(reports,idx+1);
+    navigator.share({files:[file],title:rep.name}).then(function(){
+      // partage ouvert pour ce rapport, on enchaine le suivant
+      setTimeout(function(){ shareNextReport(reports,idx+1); },900);
     }).catch(function(e){
-      if(e&&e.name==="AbortError"){ shareFilesOneByOne(reports,idx+1); return; }
-      downloadBlob(blob,reports[idx].name+".pdf");
-      shareFilesOneByOne(reports,idx+1);
+      if(e&&e.name==="AbortError"){
+        // l utilisateur a ferme: on passe quand meme au suivant
+        setTimeout(function(){ shareNextReport(reports,idx+1); },600);
+        return;
+      }
+      downloadBlob(blob,fname);
+      setTimeout(function(){ shareNextReport(reports,idx+1); },900);
     });
   } else {
-    downloadBlob(blob,reports[idx].name+".pdf");
-    shareFilesOneByOne(reports,idx+1);
+    downloadBlob(blob,fname);
+    setTimeout(function(){ shareNextReport(reports,idx+1); },900);
   }
 }
 function downloadAllPDF(){
@@ -926,14 +944,15 @@ function genMDS(){
     '<table style="width:100%;border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;">'+
     '<thead><tr style="background:#7d8d9b;color:#0c1419;font-size:11px;"><th style="border:1px solid #5a6876;padding:6px;text-align:left;">Element</th><th style="border:1px solid #5a6876;padding:6px;">'+meta.shift+' Shift</th></tr></thead>'+
     '<tbody>'+rows+'</tbody></table>'+
-    '<div style="font-size:12px;color:#3a2c12;"><b>Commentaires:</b> '+meta.comment+'</div>';
+    '<div style="font-size:12px;color:#3a2c12;"><b>Comments:</b> '+meta.comment+'</div>';
   document.getElementById("mds-out").style.display="block";
   document.getElementById("mds-out").scrollIntoView({behavior:"smooth"});
   toast("Document genere");
 }
-function buildMDSPDF(){
+function buildMDSPDF(existingDoc){
   var JsPDF=getJsPDF();
-  var doc=new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  if(existingDoc) doc.addPage("a4","portrait");
   var m=lastMDS.meta, data=lastMDS.data;
   var W=210, x=14, y=18;
   doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(43,58,74);
@@ -967,7 +986,7 @@ function buildMDSPDF(){
   }
   y+=6;
   doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(60,44,18);
-  doc.text("Commentaires: "+m.comment,x,y,{maxWidth:W-28});
+  doc.text("Comments: "+m.comment,x,y,{maxWidth:W-28});
   return doc;
 }
 
@@ -1093,15 +1112,16 @@ function genOil(){
     '<div style="overflow-x:auto;"><table style="border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;"><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+
     '<div style="font-size:12px;color:#3a2c12;margin-bottom:4px;"><b>Truck Operator:</b> '+meta.op+'</div>'+
     '<div style="font-size:12px;color:#3a2c12;margin-bottom:4px;"><b>Supervisor:</b> '+meta.sup+'</div>'+
-    '<div style="font-size:12px;color:#3a2c12;"><b>Commentaires:</b> '+meta.comment+'</div>';
+    '<div style="font-size:12px;color:#3a2c12;"><b>Comments:</b> '+meta.comment+'</div>';
   document.getElementById("oil-out").style.display="block";
   document.getElementById("oil-out").scrollIntoView({behavior:"smooth"});
   toast("Document genere");
 }
-function buildOilPDF(){
+function buildOilPDF(existingDoc){
   var JsPDF=getJsPDF();
   // paysage pour le grand tableau
-  var doc=new JsPDF({unit:"mm",format:"a4",orientation:"landscape"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"landscape"});
+  if(existingDoc) doc.addPage("a4","landscape");
   var m=lastOil.meta, rows=lastOil.rows;
   var W=297, x=10, y=16;
   doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(43,58,74);
@@ -1155,14 +1175,18 @@ function buildOilPDF(){
   doc.text("Truck Operator: "+m.op,x,y);
   doc.text("Supervisor: "+m.sup,x+120,y); y+=7;
   doc.setFont("helvetica","normal");
-  doc.text("Commentaires: "+m.comment,x,y,{maxWidth:W-20});
+  doc.text("Comments: "+m.comment,x,y,{maxWidth:W-20});
   return doc;
 }
 
 /* ===== WORK ORDER ===== */
 var WO_STATUS=["A faire","En cours","Termine"];
-function woStatusColor(s){
-  if(s==="Termine") return "#1a7a4e";
+function woStatusEN(s){
+  if(s==="Termine") return "Done";
+  if(s==="En cours") return "In progress";
+  return "To do";
+}
+function woStatusColor(s){  if(s==="Termine") return "#1a7a4e";
   if(s==="En cours") return "#f0a832";
   return "#f04848"; // A faire
 }
@@ -1377,9 +1401,10 @@ function genWO(){
   document.getElementById("wo-out").scrollIntoView({behavior:"smooth"});
   toast("Document genere");
 }
-function buildWOPDF(){
+function buildWOPDF(existingDoc){
   var JsPDF=getJsPDF();
-  var doc=new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  var doc=existingDoc||new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  if(existingDoc) doc.addPage("a4","portrait");
   var m=lastWO.meta, rows=lastWO.rows;
   var W=210, x=14, y=18;
   doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(43,58,74);
@@ -1423,7 +1448,7 @@ function buildWOPDF(){
   for(var gi=0;gi<groups.length;gi++){
     var g=groups[gi];
     for(var ti=0;ti<g.tasks.length;ti++){
-      if(y>275){ doc.addPage(); y=18; }
+      if(y>275){ doc.addPage("a4","portrait"); y=18; }
       var r=g.tasks[ti];
       var c=woStatusColor(r.stat);
       var rgb=c==="#1a7a4e"?[26,122,78]:(c==="#f0a832"?[240,168,50]:[240,72,72]);
@@ -1437,19 +1462,19 @@ function buildWOPDF(){
     var anyPhoto=false;
     for(var t1=0;t1<grp.tasks.length;t1++){ if(grp.tasks[t1].photos&&grp.tasks[t1].photos.length){ anyPhoto=true; break; } }
     if(!anyPhoto) continue;
-    if(y>255){ doc.addPage(); y=18; }
+    if(y>255){ doc.addPage("a4","portrait"); y=18; }
     doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(43,58,74);
     doc.text(grp.rig,x,y); y+=6;
     for(var t2=0;t2<grp.tasks.length;t2++){
       var tk=grp.tasks[t2];
       if(!tk.photos||!tk.photos.length) continue;
-      if(y>270){ doc.addPage(); y=18; }
+      if(y>270){ doc.addPage("a4","portrait"); y=18; }
       doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(58,44,18);
       doc.text("- "+tk.def,x,y); y+=4;
       var px=x, ph=50, pw=50;
       for(var k=0;k<tk.photos.length;k++){
         if(px+pw>W-x){ px=x; y+=ph+3; }
-        if(y+ph>285){ doc.addPage(); y=18; px=x; }
+        if(y+ph>285){ doc.addPage("a4","portrait"); y=18; px=x; }
         try{ doc.addImage(tk.photos[k],"JPEG",px,y,pw,ph); }catch(e){}
         px+=pw+3;
       }
@@ -1660,7 +1685,7 @@ try{
   applyPref("d-lead","dlead"); applyPref("d-forman","dforman");
   refreshDatalist("failure"); refreshDatalist("action");
 }catch(e){}
-document.getElementById("sub").textContent="GMAO Pret";
+document.getElementById("sub").textContent="Drilling GMAO";
 // Renforce le blocage de traduction (au cas ou le navigateur tente de traduire)
 try {
   var htmlEl = document.documentElement;
