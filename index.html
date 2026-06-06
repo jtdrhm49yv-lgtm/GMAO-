@@ -262,6 +262,7 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
       <div style="font-size:11.5px;color:var(--text3);margin-bottom:10px;">Genere et partage en PDF tous les rapports que tu as crees (Panne, Daily, MDS, Huile). Seuls les rapports remplis sont envoyes.</div>
       <button class="btn btn-wa" onclick="shareAllPDF()">Partager tous les PDF</button>
       <button class="btn btn-amber" onclick="downloadAllPDF()">Telecharger tous les PDF</button>
+      <button class="btn btn-green" onclick="downloadAllImages()">Telecharger tous en images (galerie)</button>
     </div>
     <div class="wa-box" style="background:rgba(56,182,255,0.06);border-color:rgba(56,182,255,0.2);">
       <div class="wa-box-t" style="color:var(--blue);">Sauvegarde des donnees</div>
@@ -297,6 +298,8 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 <datalist id="dl-action"></datalist>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 var WA_NUMBER = "221779515790";
@@ -804,8 +807,46 @@ function nextWithConfirm(reports,idx){
     }
   },1500);
 }
-function downloadAllPDF(){
-  var reports=collectAllReports();
+// Telecharge chaque rapport genere en IMAGE (PNG) -> va dans la galerie
+function collectReportPreviews(){
+  // retourne les apercus HTML des rapports generes
+  var items=[];
+  if(lastPanne) items.push({id:"doc-p",name:"Rapport_Panne"});
+  if(lastDaily) items.push({id:"doc-d",name:"Daily_Service"});
+  if(lastMDS) items.push({id:"doc-m",name:"MDS_Compliance"});
+  if(lastOil) items.push({id:"doc-o",name:"Oil_Report"});
+  if(lastWO) items.push({id:"doc-w",name:"Work_Order"});
+  return items;
+}
+function downloadAllImages(){
+  if(typeof html2canvas==="undefined"){ toast("Patiente, chargement..."); return; }
+  var items=collectReportPreviews();
+  if(!items.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
+  toast("Creation des images...");
+  renderImagesSeq(items,0);
+}
+function renderImagesSeq(items,idx){
+  if(idx>=items.length){ toast(items.length+" image(s) telechargee(s) dans la galerie"); return; }
+  var src=document.getElementById(items[idx].id);
+  if(!src||!src.innerHTML.trim()){ renderImagesSeq(items,idx+1); return; }
+  // conteneur temporaire visible (hors ecran) avec fond creme comme les rapports
+  var holder=document.createElement("div");
+  holder.style.cssText="position:fixed;left:-9999px;top:0;width:780px;background:#fdf6e9;padding:24px;z-index:-1;";
+  holder.className="notranslate"; holder.setAttribute("translate","no");
+  holder.innerHTML=src.innerHTML;
+  document.body.appendChild(holder);
+  html2canvas(holder,{backgroundColor:"#fdf6e9",scale:2,useCORS:true}).then(function(canvas){
+    canvas.toBlob(function(blob){
+      if(blob) downloadBlob(blob,items[idx].name+".png");
+      document.body.removeChild(holder);
+      setTimeout(function(){ renderImagesSeq(items,idx+1); },500);
+    },"image/png");
+  }).catch(function(e){
+    if(holder.parentNode) document.body.removeChild(holder);
+    setTimeout(function(){ renderImagesSeq(items,idx+1); },500);
+  });
+}
+function downloadAllPDF(){  var reports=collectAllReports();
   if(!reports.length){ toast("Aucun rapport genere. Remplis-en au moins un."); return; }
   for(var i=0;i<reports.length;i++){
     (function(rep,delay){
