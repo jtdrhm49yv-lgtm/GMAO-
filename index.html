@@ -669,9 +669,18 @@ function elInfoBar(doc,x,y,W,pairs){
   }
   return y+bh+8;
 }
+// Dessine une ligne "Tech: ..." (fond gris) de largeur w a partir de (tx,y). Retourne le nouveau y.
+function drawTechRow(doc,tx,y,w,techs){
+  doc.setFillColor(238,240,243); doc.rect(tx,y,w,8.5,"F");
+  doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2); doc.rect(tx,y,w,8.5);
+  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
+  doc.text("Tech",tx+2,y+5.7);
+  doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+  doc.text(String(techs),tx+22,y+5.7);
+  return y+8.5;
+}
 // Trace les lignes verticales de separation entre colonnes, pour une ligne de hauteur rh
-function elVSep(doc,x,y,rh,cols){
-  doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2);
+function elVSep(doc,x,y,rh,cols){  doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2);
   var cx=x;
   for(var i=0;i<cols.length-1;i++){ cx+=cols[i].w; doc.line(cx,y,cx,y+rh); }
 }
@@ -719,43 +728,78 @@ function buildPannePDF(existingDoc){
   for(var i=0;i<cols.length;i++){ doc.text(cols[i].t,cx+2,y+6); cx+=cols[i].w; }
   elVSep(doc,x,y,headH,cols);
   y+=headH;
-  for(var r2=0;r2<rows.length;r2++){
-    var r=rows[r2];
-    if(y>248){ doc.addPage("a4","portrait"); y=18; }
-    var failLines=doc.splitTextToSize(String(r.failure||"-"),cols[3].w-3);
-    var actLines=doc.splitTextToSize(String(r.action||"-"),cols[4].w-3);
-    var nLines=Math.max(failLines.length,actLines.length,1);
-    var rh=Math.max(12,nLines*5.5+5);
-    cx=x;
-    // bord exterieur de la ligne
-    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2);
-    doc.rect(x,y,W-2*x,rh);
-    // Machine (gras, fonce)
-    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(String(r.machine||"-"),cx+2,y+rh/2+1.5); cx+=cols[0].w;
-    // Start
-    doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(String(r.start||"-"),cx+2,y+rh/2+1.5); cx+=cols[1].w;
-    // End
-    doc.text(String(r.end||"-"),cx+2,y+rh/2+1.5); cx+=cols[2].w;
-    // Failure (rouge bordeaux, gras)
-    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(EL_RED[0],EL_RED[1],EL_RED[2]);
-    doc.text(failLines,cx+2,y+6); cx+=cols[3].w;
-    // Action (normal fonce)
-    doc.setFont("helvetica","normal"); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(actLines,cx+2,y+6);
-    // separateurs verticaux
-    elVSep(doc,x,y,rh,cols);
-    y+=rh;
-    // ligne tech (fond gris clair, pleine largeur)
-    if(r.techs){
-      doc.setFillColor(238,240,243); doc.rect(x,y,W-2*x,8.5,"F");
-      doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.rect(x,y,W-2*x,8.5);
-      doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
-      doc.text("Tech",x+2,y+5.7);
-      doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-      doc.text(String(r.techs),x+26,y+5.7);
-      y+=8.5;
+  var pCols=[{w:cols[1].w},{w:cols[2].w},{w:cols[3].w},{w:cols[4].w}]; // colonnes apres Machine
+  var mx=x+cols[0].w; // x de debut des colonnes apres Machine
+  var machineGroups=panneGroupByMachine(rows);
+  // Determine la signature techniciens de chaque machine (si toutes ses pannes ont les memes techs)
+  for(var mgi=0;mgi<machineGroups.length;mgi++){
+    var mg=machineGroups[mgi];
+    var sig=null, uniform=true;
+    for(var ii=0;ii<mg.items.length;ii++){
+      var t=(mg.items[ii].techs||"").trim();
+      if(sig===null) sig=t;
+      else if(sig!==t) uniform=false;
+    }
+    mg.techSig = uniform ? sig : null; // null = techs differents au sein de la machine
+  }
+  // Fusionne les machines consecutives qui partagent EXACTEMENT les memes techniciens
+  var superGroups=[];
+  for(var mgi2=0;mgi2<machineGroups.length;mgi2++){
+    var mg2=machineGroups[mgi2];
+    var last=superGroups[superGroups.length-1];
+    if(last && last.sharedTech!==null && mg2.techSig!==null && last.sharedTech===mg2.techSig && mg2.techSig!==""){
+      last.machines.push(mg2);
+    } else {
+      superGroups.push({machines:[mg2], sharedTech: mg2.techSig});
+    }
+  }
+  // Rendu
+  for(var sgi=0;sgi<superGroups.length;sgi++){
+    var sg=superGroups[sgi];
+    var groupShareTech = sg.machines.length>1 || (sg.sharedTech!==null && sg.sharedTech!=="");
+    if(y>232){ doc.addPage("a4","portrait"); y=18; }
+    var sgTop=y;
+    for(var mi=0;mi<sg.machines.length;mi++){
+      var mc=sg.machines[mi];
+      var mcTop=y;
+      for(var ti=0;ti<mc.items.length;ti++){
+        var r=mc.items[ti];
+        if(y>252){ doc.addPage("a4","portrait"); y=18; mcTop=y; sgTop=y; }
+        var failLines=doc.splitTextToSize(String(r.failure||"-"),cols[3].w-3);
+        var actLines=doc.splitTextToSize(String(r.action||"-"),cols[4].w-3);
+        var nLines=Math.max(failLines.length,actLines.length,1);
+        var rh=Math.max(12,nLines*5.5+5);
+        var cx2=mx;
+        doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2);
+        doc.rect(mx,y,W-x-mx,rh);
+        doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+        doc.text(String(r.start||"-"),cx2+2,y+rh/2+1.5); cx2+=pCols[0].w;
+        doc.text(String(r.end||"-"),cx2+2,y+rh/2+1.5); cx2+=pCols[1].w;
+        doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(EL_RED[0],EL_RED[1],EL_RED[2]);
+        doc.text(failLines,cx2+2,y+6); cx2+=pCols[2].w;
+        doc.setFont("helvetica","normal"); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+        doc.text(actLines,cx2+2,y+6);
+        elVSep(doc,mx,y,rh,pCols);
+        y+=rh;
+        // si techs differents AU SEIN de la machine -> ligne tech par panne
+        if(!groupShareTech && mc.techSig===null && r.techs){
+          y=drawTechRow(doc,mx,y,W-x-mx,r.techs);
+        }
+      }
+      // cellule machine (une fois pour cette machine)
+      var mcH=y-mcTop;
+      doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2);
+      doc.rect(x,mcTop,cols[0].w,mcH);
+      doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+      doc.text(String(mc.machine||"-"),x+2,mcTop+mcH/2+1.5);
+      // si machine uniforme mais PAS partagee avec d autres machines -> tech sous cette machine
+      if(!groupShareTech && mc.techSig!==null && mc.techSig!==""){
+        y=drawTechRow(doc,x,y,W-2*x,mc.techSig);
+      }
+    }
+    // si techniciens partages par tout le super-groupe -> une seule ligne tech en bas
+    if(groupShareTech && sg.sharedTech){
+      y=drawTechRow(doc,x,y,W-2*x,sg.sharedTech);
     }
   }
   y+=10;
@@ -1447,6 +1491,15 @@ function woGroupByMachine(rows){
     var rig=rows[i].rig;
     if(idx[rig]===undefined){ idx[rig]=groups.length; groups.push({rig:rig,tasks:[]}); }
     groups[idx[rig]].tasks.push(rows[i]);
+  }
+  return groups;
+}
+function panneGroupByMachine(rows){
+  var groups=[]; var idx={};
+  for(var i=0;i<rows.length;i++){
+    var mc=rows[i].machine||"-";
+    if(idx[mc]===undefined){ idx[mc]=groups.length; groups.push({machine:mc,items:[]}); }
+    groups[idx[mc]].items.push(rows[i]);
   }
   return groups;
 }
