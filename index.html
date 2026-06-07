@@ -637,7 +637,7 @@ function getJsPDF(){
 
 /* ===== STYLE ELEGANT DES RAPPORTS PDF ===== */
 // Palette
-var EL_NAVY=[43,58,74], EL_GOLD=[176,141,87], EL_RED=[150,42,42], EL_GRAY=[120,128,138], EL_LINE=[210,200,180], EL_INK=[40,40,45];
+var EL_NAVY=[28,42,60], EL_GOLD=[150,115,60], EL_RED=[150,42,42], EL_GRAY=[80,88,98], EL_LINE=[170,160,140], EL_INK=[20,20,24];
 // En-tete elegant : petit logo rond + titre serif centre. Retourne le nouveau y.
 function elHeader(doc,W,y,title){
   // engrenage stylise (cercle)
@@ -669,9 +669,14 @@ function elInfoBar(doc,x,y,W,pairs){
   }
   return y+bh+8;
 }
+// Trace les lignes verticales de separation entre colonnes, pour une ligne de hauteur rh
+function elVSep(doc,x,y,rh,cols){
+  doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2);
+  var cx=x;
+  for(var i=0;i<cols.length-1;i++){ cx+=cols[i].w; doc.line(cx,y,cx,y+rh); }
+}
 // Sous-titre centre (ex: "Breakdown Details")
-function elSubtitle(doc,W,y,txt){
-  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
+function elSubtitle(doc,W,y,txt){  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
   doc.text(txt,W/2,y,{align:"center"}); y+=6;
   return y;
 }
@@ -705,52 +710,53 @@ function buildPannePDF(existingDoc){
   y=elSubtitle(doc,W,y,"Breakdown Details");
   // Tableau elegant
   var cols=[{t:"Machine",w:30},{t:"Start",w:22},{t:"End",w:22},{t:"Failure",w:52},{t:"Action",w:56}];
-  // en-tete (ligne fine, pas de fond lourd)
+  // en-tete (fond navy clair, texte fonce)
   var cx=x;
-  doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
-  doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.setLineWidth(0.5);
-  doc.line(x,y,W-x,y);
-  y+=2;
-  for(var i=0;i<cols.length;i++){ doc.text(cols[i].t,cx+1.5,y+4); cx+=cols[i].w; }
-  y+=6;
-  doc.setLineWidth(0.3); doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.line(x,y,W-x,y);
-  y+=2;
-  doc.setLineWidth(0.2);
+  var headH=9;
+  doc.setFillColor(235,238,242); doc.rect(x,y,W-2*x,headH,"F");
+  doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.setLineWidth(0.4); doc.rect(x,y,W-2*x,headH);
+  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]);
+  for(var i=0;i<cols.length;i++){ doc.text(cols[i].t,cx+2,y+6); cx+=cols[i].w; }
+  elVSep(doc,x,y,headH,cols);
+  y+=headH;
   for(var r2=0;r2<rows.length;r2++){
     var r=rows[r2];
-    if(y>250){ doc.addPage("a4","portrait"); y=18; }
-    // hauteur dynamique selon le texte le plus long (failure/action)
+    if(y>248){ doc.addPage("a4","portrait"); y=18; }
     var failLines=doc.splitTextToSize(String(r.failure||"-"),cols[3].w-3);
     var actLines=doc.splitTextToSize(String(r.action||"-"),cols[4].w-3);
     var nLines=Math.max(failLines.length,actLines.length,1);
-    var rh=Math.max(11,nLines*5+5);
+    var rh=Math.max(12,nLines*5.5+5);
     cx=x;
-    // Machine (gras, navy)
-    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(String(r.machine||"-"),cx+1.5,y+rh/2+1); cx+=cols[0].w;
+    // bord exterieur de la ligne
+    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2);
+    doc.rect(x,y,W-2*x,rh);
+    // Machine (gras, fonce)
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+    doc.text(String(r.machine||"-"),cx+2,y+rh/2+1.5); cx+=cols[0].w;
     // Start
-    doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(String(r.start||"-"),cx+1.5,y+rh/2+1); cx+=cols[1].w;
+    doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+    doc.text(String(r.start||"-"),cx+2,y+rh/2+1.5); cx+=cols[1].w;
     // End
-    doc.text(String(r.end||"-"),cx+1.5,y+rh/2+1); cx+=cols[2].w;
+    doc.text(String(r.end||"-"),cx+2,y+rh/2+1.5); cx+=cols[2].w;
     // Failure (rouge bordeaux, gras)
-    doc.setFont("helvetica","bold"); doc.setTextColor(EL_RED[0],EL_RED[1],EL_RED[2]);
-    doc.text(failLines,cx+1.5,y+5); cx+=cols[3].w;
-    // Action (normal)
+    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(EL_RED[0],EL_RED[1],EL_RED[2]);
+    doc.text(failLines,cx+2,y+6); cx+=cols[3].w;
+    // Action (normal fonce)
     doc.setFont("helvetica","normal"); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(actLines,cx+1.5,y+5);
+    doc.text(actLines,cx+2,y+6);
+    // separateurs verticaux
+    elVSep(doc,x,y,rh,cols);
     y+=rh;
-    // ligne tech (fond gris clair)
+    // ligne tech (fond gris clair, pleine largeur)
     if(r.techs){
-      doc.setFillColor(243,244,246); doc.rect(x,y,W-2*x,8,"F");
-      doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
-      doc.text("Tech",x+2,y+5.3);
+      doc.setFillColor(238,240,243); doc.rect(x,y,W-2*x,8.5,"F");
+      doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.rect(x,y,W-2*x,8.5);
+      doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
+      doc.text("Tech",x+2,y+5.7);
       doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-      doc.text(String(r.techs),x+24,y+5.3);
-      y+=8;
+      doc.text(String(r.techs),x+26,y+5.7);
+      y+=8.5;
     }
-    // separateur fin
-    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2); doc.line(x,y,W-x,y);
   }
   y+=10;
   if(y>255){ doc.addPage("a4","portrait"); y=18; }
@@ -769,25 +775,29 @@ function buildDailyPDF(existingDoc){
   y=elInfoBar(doc,x,y,W,[{label:"Location",value:m.loc},{label:"Date",value:fmtDate(m.date)},{label:"Shift",value:m.shift}]);
   y=elSubtitle(doc,W,y,"Daily Drilling Maintenance Reporting");
   var cols=[{t:"Rig",w:32},{t:"Begin",w:28},{t:"End",w:28},{t:"Type",w:94}];
-  // en-tete
+  // en-tete (fond clair, texte fonce)
   var cx=x;
-  doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
-  doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.setLineWidth(0.5); doc.line(x,y,W-x,y); y+=2;
-  for(var i=0;i<cols.length;i++){ doc.text(cols[i].t,cx+1.5,y+4); cx+=cols[i].w; }
-  y+=6; doc.setLineWidth(0.3); doc.line(x,y,W-x,y); y+=2; doc.setLineWidth(0.2);
+  var headH=9;
+  doc.setFillColor(235,238,242); doc.rect(x,y,W-2*x,headH,"F");
+  doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.setLineWidth(0.4); doc.rect(x,y,W-2*x,headH);
+  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]);
+  for(var i=0;i<cols.length;i++){ doc.text(cols[i].t,cx+2,y+6); cx+=cols[i].w; }
+  elVSep(doc,x,y,headH,cols);
+  y+=headH;
   for(var r2=0;r2<rows.length;r2++){
     var r=rows[r2];
     if(y>255){ doc.addPage("a4","portrait"); y=18; }
-    var rh=11; cx=x;
-    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(String(r.rig||"-"),cx+1.5,y+rh/2+1); cx+=cols[0].w;
-    doc.setFont("helvetica","normal"); doc.setFontSize(11);
-    doc.text(String(r.begin||"-"),cx+1.5,y+rh/2+1); cx+=cols[1].w;
-    doc.text(String(r.end||"-"),cx+1.5,y+rh/2+1); cx+=cols[2].w;
+    var rh=12; cx=x;
+    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2); doc.rect(x,y,W-2*x,rh);
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+    doc.text(String(r.rig||"-"),cx+2,y+rh/2+1.5); cx+=cols[0].w;
+    doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+    doc.text(String(r.begin||"-"),cx+2,y+rh/2+1.5); cx+=cols[1].w;
+    doc.text(String(r.end||"-"),cx+2,y+rh/2+1.5); cx+=cols[2].w;
     doc.setFont("helvetica","bold"); doc.setTextColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]);
-    doc.text(String(r.type||"-"),cx+1.5,y+rh/2+1);
+    doc.text(String(r.type||"-"),cx+2,y+rh/2+1.5);
+    elVSep(doc,x,y,rh,cols);
     y+=rh;
-    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2); doc.line(x,y,W-x,y);
   }
   y+=10;
   if(y>250){ doc.addPage("a4","portrait"); y=18; }
@@ -1053,12 +1063,15 @@ function buildMDSPDF(existingDoc){
   y=elInfoBar(doc,x,y,W,[{label:"Date",value:fmtDate(m.date)},{label:"Shift",value:m.shift}]);
   y=elSubtitle(doc,W,y,"Maintenance Crew Daily Compliance");
   var c1w=110, c2w=W-2*x-c1w;
-  // en-tete
-  var cx=x;
-  doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
-  doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.setLineWidth(0.5); doc.line(x,y,W-x,y); y+=2;
-  doc.text("Element",x+1.5,y+4); doc.text(m.shift+" Shift",x+c1w+1.5,y+4);
-  y+=6; doc.setLineWidth(0.3); doc.line(x,y,W-x,y); y+=2; doc.setLineWidth(0.2);
+  var mcols=[{w:c1w},{w:c2w}];
+  // en-tete (fond clair, texte fonce)
+  var headH=9;
+  doc.setFillColor(235,238,242); doc.rect(x,y,W-2*x,headH,"F");
+  doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.setLineWidth(0.4); doc.rect(x,y,W-2*x,headH);
+  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]);
+  doc.text("Element",x+2,y+6); doc.text(m.shift+" Shift",x+c1w+2,y+6);
+  elVSep(doc,x,y,headH,mcols);
+  y+=headH;
   for(var i=0;i<data.length;i++){
     var d=data[i];
     if(y>262){ doc.addPage("a4","portrait"); y=18; }
@@ -1067,23 +1080,23 @@ function buildMDSPDF(existingDoc){
       if(d.val==="OK"){ color=[26,122,78]; txt="OK"; }
       else if(d.val==="NOT OK"){ color=[181,42,42]; txt="NOT OK"; }
     }
-    var rh=10;
-    // zebra leger
-    if(i%2===0){ doc.setFillColor(249,248,244); doc.rect(x,y,W-2*x,rh,"F"); }
-    doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(String(d.label||"-"),x+2,y+rh/2+1);
-    doc.setFont("helvetica","bold");
+    var rh=11;
+    if(i%2===0){ doc.setFillColor(247,246,242); doc.rect(x,y,W-2*x,rh,"F"); }
+    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2); doc.rect(x,y,W-2*x,rh);
+    doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+    doc.text(String(d.label||"-"),x+2,y+rh/2+1.5);
+    doc.setFont("helvetica","bold"); doc.setFontSize(12);
     if(color) doc.setTextColor(color[0],color[1],color[2]); else doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(String(txt||"-"),x+c1w+2,y+rh/2+1);
+    doc.text(String(txt||"-"),x+c1w+2,y+rh/2+1.5);
+    elVSep(doc,x,y,rh,mcols);
     y+=rh;
-    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2); doc.line(x,y,W-x,y);
   }
   y+=10;
   if(y>262){ doc.addPage("a4","portrait"); y=18; }
-  doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
+  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
   doc.text("COMMENTS",x,y);
-  doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-  doc.text(String(m.comment||"-"),x+38,y,{maxWidth:W-2*x-40});
+  doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+  doc.text(String(m.comment||"-"),x+40,y,{maxWidth:W-2*x-42});
   return doc;
 }
 
@@ -1514,35 +1527,39 @@ function buildWOPDF(existingDoc){
   y=elHeader(doc,W,y,"WORK ORDER");
   y=elInfoBar(doc,x,y,W,[{label:"Date",value:fmtDate(m.date)},{label:"Cree par",value:m.by}]);
   var cols=[{t:"Machine",w:30},{t:"Defaut",w:70},{t:"Statut",w:34},{t:"Technicien",w:48}];
-  // en-tete
+  // en-tete (fond clair, texte fonce)
   var cx=x;
-  doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(EL_GRAY[0],EL_GRAY[1],EL_GRAY[2]);
-  doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.setLineWidth(0.5); doc.line(x,y,W-x,y); y+=2;
-  for(var i=0;i<cols.length;i++){ doc.text(cols[i].t,cx+1.5,y+4); cx+=cols[i].w; }
-  y+=6; doc.setLineWidth(0.3); doc.line(x,y,W-x,y); y+=2; doc.setLineWidth(0.2);
+  var headH=9;
+  doc.setFillColor(235,238,242); doc.rect(x,y,W-2*x,headH,"F");
+  doc.setDrawColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]); doc.setLineWidth(0.4); doc.rect(x,y,W-2*x,headH);
+  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_NAVY[0],EL_NAVY[1],EL_NAVY[2]);
+  for(var i=0;i<cols.length;i++){ doc.text(cols[i].t,cx+2,y+6); cx+=cols[i].w; }
+  elVSep(doc,x,y,headH,cols);
+  y+=headH;
   var groups=woGroupByMachine(rows);
   function rowGrouped(rigCell,def,stat,tech,statColor){
     var defLines=doc.splitTextToSize(String(def||"-"),cols[1].w-3);
     var techLines=doc.splitTextToSize(String(tech||"-"),cols[3].w-3);
     var nLines=Math.max(defLines.length,techLines.length,1);
-    var h=Math.max(11,nLines*5+4);
+    var h=Math.max(12,nLines*5.5+5);
     var cx=x;
+    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2); doc.rect(x,y,W-2*x,h);
     // Machine
-    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    if(rigCell) doc.text(String(rigCell),cx+1.5,y+h/2+1);
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
+    if(rigCell) doc.text(String(rigCell),cx+2,y+h/2+1.5);
     cx+=cols[0].w;
     // Defaut (rouge bordeaux)
-    doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(EL_RED[0],EL_RED[1],EL_RED[2]);
-    doc.text(defLines,cx+1.5,y+5); cx+=cols[1].w;
+    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(EL_RED[0],EL_RED[1],EL_RED[2]);
+    doc.text(defLines,cx+2,y+6); cx+=cols[1].w;
     // Statut (couleur)
     doc.setFont("helvetica","bold");
     if(statColor) doc.setTextColor(statColor[0],statColor[1],statColor[2]); else doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(String(stat||"-"),cx+1.5,y+h/2+1); cx+=cols[2].w;
+    doc.text(String(stat||"-"),cx+2,y+h/2+1.5); cx+=cols[2].w;
     // Technicien
     doc.setFont("helvetica","normal"); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
-    doc.text(techLines,cx+1.5,y+5);
+    doc.text(techLines,cx+2,y+6);
+    elVSep(doc,x,y,h,cols);
     y+=h;
-    doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2); doc.line(x,y,W-x,y);
   }
   for(var gi=0;gi<groups.length;gi++){
     var g=groups[gi];
