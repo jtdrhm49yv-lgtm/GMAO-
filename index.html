@@ -643,21 +643,21 @@ function buildPannePDF(existingDoc){
   var m=lastPanne.meta, rows=lastPanne.rows;
   var W=210, x=14, y=18;
   // Titre
-  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(43,58,74);
-  doc.text("MACHINE BREAKDOWN REPORT",W/2,y,{align:"center"}); y+=8;
-  doc.setFontSize(11); doc.setTextColor(60,44,18);
+  doc.setFont("helvetica","bold"); doc.setFontSize(18); doc.setTextColor(43,58,74);
+  doc.text("MACHINE BREAKDOWN REPORT",W/2,y,{align:"center"}); y+=9;
+  doc.setFontSize(13); doc.setTextColor(60,44,18);
   doc.setFont("helvetica","normal");
-  doc.text("Shift: "+m.shift+"    Date: "+fmtDate(m.date)+"    Leading Hand: "+m.lead,x,y); y+=8;
+  doc.text("Shift: "+m.shift+"    Date: "+fmtDate(m.date)+"    Leading Hand: "+m.lead,x,y); y+=9;
   // Tableau en-tete
   var cols=[{t:"Machine",w:28},{t:"Start",w:22},{t:"End",w:22},{t:"Failure",w:55},{t:"Action",w:55}];
   function row(cells,bold,fill){
-    var h=8, cx=x;
+    var h=10, cx=x;
     for(var i=0;i<cells.length;i++){
       if(fill){ doc.setFillColor(fill[0],fill[1],fill[2]); doc.rect(cx,y,cols[i].w,h,"F"); }
       doc.setDrawColor(150,138,100); doc.rect(cx,y,cols[i].w,h);
-      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(9); doc.setTextColor(20,16,10);
+      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(11); doc.setTextColor(20,16,10);
       var txt=doc.splitTextToSize(String(cells[i]||"-"),cols[i].w-3);
-      doc.text(txt,cx+1.5,y+5);
+      doc.text(txt,cx+1.5,y+6);
       cx+=cols[i].w;
     }
     y+=h;
@@ -667,16 +667,16 @@ function buildPannePDF(existingDoc){
     var r=rows[i];
     row([r.machine,r.start||"-",r.end||"-",r.failure||"-",r.action||"-"],false,[255,253,247]);
     if(r.techs){
-      doc.setFillColor(241,232,210); doc.rect(x,y,149,7,"F"); doc.setDrawColor(150,138,100); doc.rect(x,y,149,7);
-      doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(20,16,10);
-      doc.text("Tech: "+r.techs,x+1.5,y+4.5); y+=7;
+      doc.setFillColor(241,232,210); doc.rect(x,y,149,8,"F"); doc.setDrawColor(150,138,100); doc.rect(x,y,149,8);
+      doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(20,16,10);
+      doc.text("Tech: "+r.techs,x+1.5,y+5.5); y+=8;
     }
   }
-  y+=6;
-  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(60,44,18);
-  doc.text("Supervisor: "+m.sup,x,y); y+=6;
-  doc.text("Site Supervisor: "+m.site,x,y); y+=12;
-  doc.setFontSize(15); doc.setTextColor(110,122,134);
+  y+=7;
+  doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(60,44,18);
+  doc.text("Supervisor: "+m.sup,x,y); y+=7;
+  doc.text("Site Supervisor: "+m.site,x,y); y+=13;
+  doc.setFontSize(16); doc.setTextColor(110,122,134);
   doc.text("ENDEAVOUR MINING",W/2,y,{align:"center"});
   return doc;
 }
@@ -688,21 +688,21 @@ function buildDailyPDF(existingDoc){
   if(existingDoc) doc.addPage("a4","portrait");
   var m=lastDaily.meta, rows=lastDaily.rows;
   var W=210, x=14, y=18;
-  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(43,58,74);
-  doc.text("ENDEAVOUR MINING",W/2,y,{align:"center"}); y+=7;
-  doc.setFontSize(13);
-  doc.text("Daily Drilling Maintenance Reporting",W/2,y,{align:"center"}); y+=9;
-  doc.setFontSize(11); doc.setTextColor(60,44,18); doc.setFont("helvetica","normal");
-  doc.text("Location: "+m.loc+"    Date: "+fmtDate(m.date)+"    Shift: "+m.shift,x,y); y+=8;
+  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(43,58,74);
+  doc.text("ENDEAVOUR MINING",W/2,y,{align:"center"}); y+=8;
+  doc.setFontSize(14);
+  doc.text("Daily Drilling Maintenance Reporting",W/2,y,{align:"center"}); y+=10;
+  doc.setFontSize(13); doc.setTextColor(60,44,18); doc.setFont("helvetica","normal");
+  doc.text("Location: "+m.loc+"    Date: "+fmtDate(m.date)+"    Shift: "+m.shift,x,y); y+=9;
   var cols=[{t:"Rig",w:30},{t:"Begin",w:30},{t:"End",w:30},{t:"Type",w:92}];
   function row(cells,bold,fill){
-    var h=8, cx=x;
+    var h=10, cx=x;
     for(var i=0;i<cells.length;i++){
       if(fill){ doc.setFillColor(fill[0],fill[1],fill[2]); doc.rect(cx,y,cols[i].w,h,"F"); }
       doc.setDrawColor(150,138,100); doc.rect(cx,y,cols[i].w,h);
-      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(9); doc.setTextColor(20,16,10);
+      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(11); doc.setTextColor(20,16,10);
       var txt=doc.splitTextToSize(String(cells[i]||"-"),cols[i].w-3);
-      doc.text(txt,cx+1.5,y+5);
+      doc.text(txt,cx+1.5,y+6);
       cx+=cols[i].w;
     }
     y+=h;
@@ -712,10 +712,10 @@ function buildDailyPDF(existingDoc){
     var r=rows[i];
     row([r.rig,r.begin||"-",r.end||"-",r.type||"-"],false,[255,253,247]);
   }
-  y+=8;
-  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(60,44,18);
-  doc.text("Daily Service Leading Hand: "+m.lead,x,y); y+=6;
-  doc.text("Pit Maint Forman: "+m.forman,x,y); y+=6;
+  y+=9;
+  doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(60,44,18);
+  doc.text("Daily Service Leading Hand: "+m.lead,x,y); y+=7;
+  doc.text("Pit Maint Forman: "+m.forman,x,y); y+=7;
   doc.text("Comments: "+(m.comment||"-"),x,y,{maxWidth:W-28});
   return doc;
 }
@@ -960,21 +960,21 @@ function buildMDSPDF(existingDoc){
   if(existingDoc) doc.addPage("a4","portrait");
   var m=lastMDS.meta, data=lastMDS.data;
   var W=210, x=14, y=18;
-  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(43,58,74);
-  doc.text("ENDEAVOUR MINING",W/2,y,{align:"center"}); y+=7;
-  doc.setFontSize(12);
-  doc.text("MDS MAINTENANCE CREW DAILY COMPLIANCE",W/2,y,{align:"center"}); y+=9;
-  doc.setFontSize(11); doc.setTextColor(60,44,18); doc.setFont("helvetica","normal");
-  doc.text("Date: "+fmtDate(m.date)+"    Shift: "+m.shift,x,y); y+=8;
+  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(43,58,74);
+  doc.text("ENDEAVOUR MINING",W/2,y,{align:"center"}); y+=8;
+  doc.setFontSize(13);
+  doc.text("MDS MAINTENANCE CREW DAILY COMPLIANCE",W/2,y,{align:"center"}); y+=10;
+  doc.setFontSize(13); doc.setTextColor(60,44,18); doc.setFont("helvetica","normal");
+  doc.text("Date: "+fmtDate(m.date)+"    Shift: "+m.shift,x,y); y+=9;
   var cols=[{t:"Element",w:100},{t:m.shift+" Shift",w:82}];
   function row(cells,bold,fill,color){
-    var h=8, cx=x;
+    var h=10, cx=x;
     for(var i=0;i<cells.length;i++){
       if(fill){ doc.setFillColor(fill[0],fill[1],fill[2]); doc.rect(cx,y,cols[i].w,h,"F"); }
       doc.setDrawColor(150,138,100); doc.rect(cx,y,cols[i].w,h);
-      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(10);
+      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(12);
       if(color&&i===1) doc.setTextColor(color[0],color[1],color[2]); else doc.setTextColor(20,16,10);
-      doc.text(String(cells[i]||"-"),cx+2,y+5.5);
+      doc.text(String(cells[i]||"-"),cx+2,y+6.5);
       cx+=cols[i].w;
     }
     y+=h;
@@ -989,8 +989,8 @@ function buildMDSPDF(existingDoc){
     }
     row([d.label,txt],false,[255,253,247],color);
   }
-  y+=6;
-  doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(60,44,18);
+  y+=7;
+  doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(60,44,18);
   doc.text("Comments: "+m.comment,x,y,{maxWidth:W-28});
   return doc;
 }
@@ -1129,10 +1129,10 @@ function buildOilPDF(existingDoc){
   if(existingDoc) doc.addPage("a4","landscape");
   var m=lastOil.meta, rows=lastOil.rows;
   var W=297, x=10, y=16;
-  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(43,58,74);
-  doc.text((m.shift==="Night"?"NIGHT":"DAY")+" SHIFT OIL REPORT",x,y); y+=8;
-  doc.setFontSize(11); doc.setFont("helvetica","normal"); doc.setTextColor(58,44,18);
-  doc.text("ST: "+m.st+"     Date: "+fmtDate(m.date),x,y); y+=7;
+  doc.setFont("helvetica","bold"); doc.setFontSize(17); doc.setTextColor(43,58,74);
+  doc.text((m.shift==="Night"?"NIGHT":"DAY")+" SHIFT OIL REPORT",x,y); y+=9;
+  doc.setFontSize(13); doc.setFont("helvetica","normal"); doc.setTextColor(58,44,18);
+  doc.text("ST: "+m.st+"     Date: "+fmtDate(m.date),x,y); y+=8;
   var allCols=OIL_FLUIDS.concat(OIL_COMP);
   var cols=[];
   for(var u=0;u<allCols.length;u++){
@@ -1141,42 +1141,42 @@ function buildOilPDF(existingDoc){
     if(used) cols.push(allCols[u]);
   }
   if(!cols.length) cols=["-"];
-  var rigW=20;
+  var rigW=22;
   var colW=(W-2*x-rigW)/cols.length;
   // header (gris-bleu comme les autres rapports)
   var cx=x;
-  doc.setFillColor(125,141,155); doc.rect(cx,y,rigW,12,"F");
-  doc.setDrawColor(106,90,58); doc.rect(cx,y,rigW,12);
-  doc.setTextColor(12,20,25); doc.setFontSize(7); doc.setFont("helvetica","bold");
-  doc.text("Rig",cx+rigW/2,y+7,{align:"center"});
+  doc.setFillColor(125,141,155); doc.rect(cx,y,rigW,13,"F");
+  doc.setDrawColor(106,90,58); doc.rect(cx,y,rigW,13);
+  doc.setTextColor(12,20,25); doc.setFontSize(9); doc.setFont("helvetica","bold");
+  doc.text("Rig",cx+rigW/2,y+8,{align:"center"});
   cx+=rigW;
   for(var c=0;c<cols.length;c++){
-    doc.setFillColor(125,141,155); doc.rect(cx,y,colW,12,"F"); doc.rect(cx,y,colW,12);
+    doc.setFillColor(125,141,155); doc.rect(cx,y,colW,13,"F"); doc.rect(cx,y,colW,13);
     var lbl=doc.splitTextToSize(cols[c],colW-1);
-    doc.text(lbl,cx+colW/2,y+6,{align:"center"});
+    doc.text(lbl,cx+colW/2,y+7,{align:"center"});
     cx+=colW;
   }
-  y+=12;
+  y+=13;
   // rows (fond creme)
   doc.setFont("helvetica","normal");
   for(var i=0;i<rows.length;i++){
     var r=rows[i];
     cx=x;
-    doc.setFillColor(247,240,224); doc.rect(cx,y,rigW,8,"F"); doc.setDrawColor(154,138,100); doc.rect(cx,y,rigW,8);
-    doc.setTextColor(20,16,10); doc.setFont("helvetica","bold"); doc.setFontSize(8);
-    doc.text(r.rig,cx+rigW/2,y+5,{align:"center"});
+    doc.setFillColor(247,240,224); doc.rect(cx,y,rigW,10,"F"); doc.setDrawColor(154,138,100); doc.rect(cx,y,rigW,10);
+    doc.setTextColor(20,16,10); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+    doc.text(r.rig,cx+rigW/2,y+6.5,{align:"center"});
     cx+=rigW;
     doc.setFont("helvetica","bold"); doc.setTextColor(20,16,10);
     for(var k=0;k<cols.length;k++){
-      doc.setFillColor(255,253,247); doc.rect(cx,y,colW,8,"F"); doc.rect(cx,y,colW,8);
+      doc.setFillColor(255,253,247); doc.rect(cx,y,colW,10,"F"); doc.rect(cx,y,colW,10);
       var v=r.vals[cols[k]]||"";
-      if(v) doc.text(String(v),cx+colW/2,y+5,{align:"center"});
+      if(v) doc.text(String(v),cx+colW/2,y+6.5,{align:"center"});
       cx+=colW;
     }
-    y+=8;
+    y+=10;
   }
   y+=8;
-  doc.setTextColor(58,44,18); doc.setFontSize(10); doc.setFont("helvetica","bold");
+  doc.setTextColor(58,44,18); doc.setFontSize(12); doc.setFont("helvetica","bold");
   doc.text("Truck Operator: "+m.op,x,y);
   doc.text("Supervisor: "+m.sup,x+120,y); y+=7;
   doc.setFont("helvetica","normal");
@@ -1412,22 +1412,22 @@ function buildWOPDF(existingDoc){
   if(existingDoc) doc.addPage("a4","portrait");
   var m=lastWO.meta, rows=lastWO.rows;
   var W=210, x=14, y=18;
-  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(43,58,74);
-  doc.text("ENDEAVOUR MINING",W/2,y,{align:"center"}); y+=7;
-  doc.setFontSize(13);
-  doc.text("WORK ORDER",W/2,y,{align:"center"}); y+=9;
-  doc.setFontSize(11); doc.setTextColor(58,44,18); doc.setFont("helvetica","normal");
-  doc.text("Date: "+fmtDate(m.date)+"    Cree par: "+m.by,x,y); y+=8;
+  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(43,58,74);
+  doc.text("ENDEAVOUR MINING",W/2,y,{align:"center"}); y+=8;
+  doc.setFontSize(14);
+  doc.text("WORK ORDER",W/2,y,{align:"center"}); y+=10;
+  doc.setFontSize(13); doc.setTextColor(58,44,18); doc.setFont("helvetica","normal");
+  doc.text("Date: "+fmtDate(m.date)+"    Cree par: "+m.by,x,y); y+=9;
   var cols=[{t:"Machine",w:30},{t:"Defaut",w:72},{t:"Statut",w:32},{t:"Technicien",w:48}];
   function row(cells,bold,fill,statColor){
-    var h=9, cx=x;
+    var h=10, cx=x;
     for(var i=0;i<cells.length;i++){
       if(fill){ doc.setFillColor(fill[0],fill[1],fill[2]); doc.rect(cx,y,cols[i].w,h,"F"); }
       doc.setDrawColor(150,138,100); doc.rect(cx,y,cols[i].w,h);
-      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(9);
+      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(11);
       if(statColor&&i===2) doc.setTextColor(statColor[0],statColor[1],statColor[2]); else doc.setTextColor(20,16,10);
       var txt=doc.splitTextToSize(String(cells[i]||"-"),cols[i].w-3);
-      doc.text(txt,cx+1.5,y+5.5);
+      doc.text(txt,cx+1.5,y+6);
       cx+=cols[i].w;
     }
     y+=h;
@@ -1436,16 +1436,16 @@ function buildWOPDF(existingDoc){
   var groups=woGroupByMachine(rows);
   // ligne avec cellule machine eventuellement vide (pour grouper)
   function rowGrouped(rigCell,def,stat,tech,statColor){
-    var h=9, cx=x;
+    var h=10, cx=x;
     var cells=[rigCell,def,stat,tech];
     for(var i=0;i<cells.length;i++){
       doc.setFillColor(i===0?247:255,i===0?240:253,i===0?224:247); doc.rect(cx,y,cols[i].w,h,"F");
       doc.setDrawColor(150,138,100); doc.rect(cx,y,cols[i].w,h);
-      doc.setFont("helvetica",i===0?"bold":"normal"); doc.setFontSize(i===0?11:9);
+      doc.setFont("helvetica",i===0?"bold":"normal"); doc.setFontSize(i===0?12:11);
       if(statColor&&i===2) doc.setTextColor(statColor[0],statColor[1],statColor[2]); else doc.setTextColor(20,16,10);
       var txt=doc.splitTextToSize(String(cells[i]||""),cols[i].w-3);
-      if(i===0) doc.text(txt,cx+cols[i].w/2,y+6,{align:"center"});
-      else doc.text(txt,cx+1.5,y+5.5);
+      if(i===0) doc.text(txt,cx+cols[i].w/2,y+6.5,{align:"center"});
+      else doc.text(txt,cx+1.5,y+6);
       cx+=cols[i].w;
     }
     y+=h;
