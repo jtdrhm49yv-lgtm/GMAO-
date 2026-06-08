@@ -730,41 +730,34 @@ function buildPannePDF(existingDoc){
   y+=headH;
   var pCols=[{w:cols[1].w},{w:cols[2].w},{w:cols[3].w},{w:cols[4].w}]; // colonnes apres Machine
   var mx=x+cols[0].w; // x de debut des colonnes apres Machine
-  var machineGroups=panneGroupByMachine(rows);
-  // Determine la signature techniciens de chaque machine (si toutes ses pannes ont les memes techs)
-  for(var mgi=0;mgi<machineGroups.length;mgi++){
-    var mg=machineGroups[mgi];
-    var sig=null, uniform=true;
-    for(var ii=0;ii<mg.items.length;ii++){
-      var t=(mg.items[ii].techs||"").trim();
-      if(sig===null) sig=t;
-      else if(sig!==t) uniform=false;
-    }
-    mg.techSig = uniform ? sig : null; // null = techs differents au sein de la machine
+
+  // signature normalisee des techniciens (ordre ignore)
+  function techSignature(t){
+    t=(t||"").trim();
+    if(!t) return "";
+    var parts=t.split(",").map(function(s){return s.trim().toLowerCase();}).filter(function(s){return s;});
+    parts.sort();
+    return parts.join("|");
   }
-  // Fusionne les machines consecutives qui partagent EXACTEMENT les memes techniciens
-  var superGroups=[];
-  for(var mgi2=0;mgi2<machineGroups.length;mgi2++){
-    var mg2=machineGroups[mgi2];
-    var last=superGroups[superGroups.length-1];
-    if(last && last.sharedTech!==null && mg2.techSig!==null && last.sharedTech===mg2.techSig && mg2.techSig!==""){
-      last.machines.push(mg2);
-    } else {
-      superGroups.push({machines:[mg2], sharedTech: mg2.techSig});
-    }
+  // Regroupe TOUTES les pannes par signature technicien (meme non consecutives)
+  var techGroups=[]; var tgIdx={};
+  for(var ri=0;ri<rows.length;ri++){
+    var sig=techSignature(rows[ri].techs);
+    if(tgIdx[sig]===undefined){ tgIdx[sig]=techGroups.length; techGroups.push({sig:sig, techLabel:(rows[ri].techs||"").trim(), rows:[]}); }
+    techGroups[tgIdx[sig]].rows.push(rows[ri]);
   }
-  // Rendu
-  for(var sgi=0;sgi<superGroups.length;sgi++){
-    var sg=superGroups[sgi];
-    var groupShareTech = sg.machines.length>1 || (sg.sharedTech!==null && sg.sharedTech!=="");
+  // Rendu de chaque groupe-technicien
+  for(var tgi=0;tgi<techGroups.length;tgi++){
+    var tg=techGroups[tgi];
+    // sous-groupe par machine a l interieur du groupe-technicien
+    var machineGroups=panneGroupByMachine(tg.rows);
     if(y>232){ doc.addPage("a4","portrait"); y=18; }
-    var sgTop=y;
-    for(var mi=0;mi<sg.machines.length;mi++){
-      var mc=sg.machines[mi];
+    for(var mi=0;mi<machineGroups.length;mi++){
+      var mc=machineGroups[mi];
       var mcTop=y;
       for(var ti=0;ti<mc.items.length;ti++){
         var r=mc.items[ti];
-        if(y>252){ doc.addPage("a4","portrait"); y=18; mcTop=y; sgTop=y; }
+        if(y>252){ doc.addPage("a4","portrait"); y=18; mcTop=y; }
         var failLines=doc.splitTextToSize(String(r.failure||"-"),cols[3].w-3);
         var actLines=doc.splitTextToSize(String(r.action||"-"),cols[4].w-3);
         var nLines=Math.max(failLines.length,actLines.length,1);
@@ -781,25 +774,17 @@ function buildPannePDF(existingDoc){
         doc.text(actLines,cx2+2,y+6);
         elVSep(doc,mx,y,rh,pCols);
         y+=rh;
-        // si techs differents AU SEIN de la machine -> ligne tech par panne
-        if(!groupShareTech && mc.techSig===null && r.techs){
-          y=drawTechRow(doc,mx,y,W-x-mx,r.techs);
-        }
       }
-      // cellule machine (une fois pour cette machine)
+      // cellule machine (une fois)
       var mcH=y-mcTop;
       doc.setDrawColor(EL_LINE[0],EL_LINE[1],EL_LINE[2]); doc.setLineWidth(0.2);
       doc.rect(x,mcTop,cols[0].w,mcH);
       doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(EL_INK[0],EL_INK[1],EL_INK[2]);
       doc.text(String(mc.machine||"-"),x+2,mcTop+mcH/2+1.5);
-      // si machine uniforme mais PAS partagee avec d autres machines -> tech sous cette machine
-      if(!groupShareTech && mc.techSig!==null && mc.techSig!==""){
-        y=drawTechRow(doc,x,y,W-2*x,mc.techSig);
-      }
     }
-    // si techniciens partages par tout le super-groupe -> une seule ligne tech en bas
-    if(groupShareTech && sg.sharedTech){
-      y=drawTechRow(doc,x,y,W-2*x,sg.sharedTech);
+    // une seule ligne technicien en bas du groupe (si renseignee)
+    if(tg.techLabel){
+      y=drawTechRow(doc,x,y,W-2*x,tg.techLabel);
     }
   }
   y+=10;
