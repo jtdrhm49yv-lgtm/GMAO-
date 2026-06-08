@@ -333,6 +333,101 @@ function refreshDatalist(type){
   dl.innerHTML="";
   for(var i=0;i<SUGG[type].length;i++){ var o=document.createElement("option"); o.value=SUGG[type][i]; dl.appendChild(o); }
 }
+
+/* ===== BROUILLON AUTO (sauvegarde de ce qui est en cours de saisie) ===== */
+var DRAFT_KEY="gmao_draft";
+var draftTimer=null;
+// collecte l etat actuel des formulaires Panne et Daily (meme champs partiels) + meta des autres
+function collectDraft(){
+  var d={};
+  // PANNE : cartes (raw, on garde meme si machine vide)
+  var pCards=document.getElementById("panne-list");
+  if(pCards){
+    d.panne=[];
+    for(var i=0;i<pCards.children.length;i++){
+      var c=pCards.children[i];
+      var techTags=c.querySelectorAll(".tech-tag");
+      var techNames=[];
+      for(var k=0;k<techTags.length;k++){ techNames.push(techTags[k].getAttribute("data-name")); }
+      d.panne.push({
+        machine:(c.querySelector(".p-m")||{}).value||"",
+        start:(c.querySelector(".p-s")||{}).value||"",
+        end:(c.querySelector(".p-e")||{}).value||"",
+        failure:(c.querySelector(".p-f")||{}).value||"",
+        action:(c.querySelector(".p-a")||{}).value||"",
+        techs:techNames.join(", ")
+      });
+    }
+    d.pmeta={
+      shift:gv("p-shift"), date:gv("p-date"), lead:gv("p-lead"), sup:gv("p-sup"), site:gv("p-site")
+    };
+  }
+  // DAILY : cartes
+  var dCards=document.getElementById("daily-list");
+  if(dCards){
+    d.daily=[];
+    for(var j=0;j<dCards.children.length;j++){
+      var dc=dCards.children[j];
+      d.daily.push({
+        rig:(dc.querySelector(".d-rig")||{}).value||"",
+        begin:(dc.querySelector(".d-b")||{}).value||"",
+        end:(dc.querySelector(".d-e")||{}).value||"",
+        type:(dc.querySelector(".d-type")||{}).value||""
+      });
+    }
+    d.dmeta={
+      date:gv("d-date"), loc:gv("d-loc"), shift:gv("d-shift"), lead:gv("d-lead"), forman:gv("d-forman"), comment:gv("d-comment")
+    };
+  }
+  return d;
+}
+function gv(id){ var e=document.getElementById(id); return e?e.value:""; }
+function sv(id,val){ var e=document.getElementById(id); if(e&&val!==undefined&&val!==null) e.value=val; }
+function saveDraft(){
+  try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(collectDraft())); }catch(e){}
+}
+// declenche une sauvegarde (avec petit delai pour ne pas ralentir la frappe)
+function scheduleDraftSave(){
+  if(draftTimer) clearTimeout(draftTimer);
+  draftTimer=setTimeout(saveDraft,600);
+}
+function clearPanneDraft(){
+  try{ var d=JSON.parse(localStorage.getItem(DRAFT_KEY)||"{}"); delete d.panne; delete d.pmeta; localStorage.setItem(DRAFT_KEY,JSON.stringify(d)); }catch(e){}
+}
+function clearDailyDraft(){
+  try{ var d=JSON.parse(localStorage.getItem(DRAFT_KEY)||"{}"); delete d.daily; delete d.dmeta; localStorage.setItem(DRAFT_KEY,JSON.stringify(d)); }catch(e){}
+}
+// restaure les brouillons au demarrage
+function restoreDrafts(){
+  var d;
+  try{ d=JSON.parse(localStorage.getItem(DRAFT_KEY)||"{}"); }catch(e){ d={}; }
+  if(!d||typeof d!=="object") return;
+  // PANNE
+  if(d.panne&&d.panne.length){
+    document.getElementById("panne-list").innerHTML=""; pCount=0;
+    var hasContent=false;
+    for(var i=0;i<d.panne.length;i++){
+      var p=d.panne[i];
+      if(p.machine||p.start||p.end||p.failure||p.action||p.techs){ hasContent=true; }
+      addPanne(p);
+    }
+    if(!hasContent){ document.getElementById("panne-list").innerHTML=""; pCount=0; addPanne(); }
+    if(d.pmeta){ sv("p-shift",d.pmeta.shift); if(d.pmeta.date) sv("p-date",d.pmeta.date); sv("p-lead",d.pmeta.lead); sv("p-sup",d.pmeta.sup); sv("p-site",d.pmeta.site); }
+  }
+  // DAILY
+  if(d.daily&&d.daily.length){
+    document.getElementById("daily-list").innerHTML=""; dCount=0;
+    var hasD=false;
+    for(var j=0;j<d.daily.length;j++){
+      var dd=d.daily[j];
+      if(dd.rig||dd.begin||dd.end||dd.type){ hasD=true; }
+      addDaily(dd);
+    }
+    if(!hasD){ document.getElementById("daily-list").innerHTML=""; dCount=0; addDaily(); }
+    if(d.dmeta){ if(d.dmeta.date) sv("d-date",d.dmeta.date); sv("d-loc",d.dmeta.loc); sv("d-shift",d.dmeta.shift); sv("d-lead",d.dmeta.lead); sv("d-forman",d.dmeta.forman); sv("d-comment",d.dmeta.comment); }
+  }
+}
+
 function exportData(){
   try{
     var data=JSON.stringify(DB);
@@ -486,7 +581,7 @@ function fieldTime(label,cls,val){
   var i=document.createElement("input"); i.type="time"; i.className=cls; if(val) i.value=val;
   f.appendChild(l); f.appendChild(i); return f;
 }
-function clearPanne(){ if(confirm("Effacer toutes les pannes ?")){ document.getElementById("panne-list").innerHTML=""; pCount=0; } }
+function clearPanne(){ if(confirm("Effacer toutes les pannes ?")){ document.getElementById("panne-list").innerHTML=""; pCount=0; clearPanneDraft(); addPanne(); } }
 
 function getPanne(){
   var cards=document.getElementById("panne-list").children;
@@ -514,6 +609,7 @@ function genPanne(){
     lead:document.getElementById("p-lead").value||"-",sup:document.getElementById("p-sup").value||"-",site:document.getElementById("p-site").value||"-"};
   lastPanne={rows:rows,meta:meta};
   DB.push({type:"Panne",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
+  clearPanneDraft();
   for(var sg=0;sg<rows.length;sg++){ addSugg("failure",rows[sg].failure); addSugg("action",rows[sg].action); }
   savePref("lead",document.getElementById("p-lead").value);
   savePref("sup",document.getElementById("p-sup").value);
@@ -579,7 +675,7 @@ function addDaily(data){
   d.appendChild(head); d.appendChild(body);
   list.appendChild(d);
 }
-function clearDaily(){ if(confirm("Reinitialiser ?")){ document.getElementById("daily-list").innerHTML=""; dCount=0; document.getElementById("d-comment").value=""; document.getElementById("daily-out").style.display="none"; } }
+function clearDaily(){ if(confirm("Reinitialiser ?")){ document.getElementById("daily-list").innerHTML=""; dCount=0; document.getElementById("d-comment").value=""; document.getElementById("daily-out").style.display="none"; clearDailyDraft(); addDaily(); } }
 
 function getDaily(){
   var cards=document.getElementById("daily-list").children;
@@ -604,6 +700,7 @@ function genDaily(){
   savePref("dlead",document.getElementById("d-lead").value);
   savePref("dforman",document.getElementById("d-forman").value);
   DB.push({type:"Daily",date:meta.date,shift:meta.shift,count:rows.length,rows:rows,meta:meta,ts:Date.now()});
+  clearDailyDraft();
   saveDB();
 
   var tr="";
@@ -1838,6 +1935,16 @@ try{
   applyPref("p-lead","lead"); applyPref("p-sup","sup"); applyPref("p-site","site");
   applyPref("d-lead","dlead"); applyPref("d-forman","dforman");
   refreshDatalist("failure"); refreshDatalist("action");
+}catch(e){}
+// restaure les brouillons en cours (panne/daily non encore generes)
+try{ restoreDrafts(); }catch(e){}
+// sauvegarde auto du brouillon a chaque saisie dans les vues Panne et Daily
+try{
+  ["v-panne","v-daily"].forEach(function(vid){
+    var v=document.getElementById(vid);
+    if(v){ v.addEventListener("input",scheduleDraftSave,true); v.addEventListener("change",scheduleDraftSave,true); v.addEventListener("click",scheduleDraftSave,true); }
+  });
+  window.addEventListener("beforeunload",saveDraft);
 }catch(e){}
 document.getElementById("sub").textContent="Drilling GMAO";
 // Renforce le blocage de traduction (au cas ou le navigateur tente de traduire)
