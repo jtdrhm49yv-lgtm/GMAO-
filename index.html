@@ -11,6 +11,10 @@
 <title>Drilling_GMAO</title>
 <meta name="apple-mobile-web-app-title" content="Drilling_GMAO">
 <meta name="application-name" content="Drilling_GMAO">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#080f0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{
   --bg:#080f0c;--surface:#0f1a16;--surface2:#162219;--surface3:#1c2e24;
@@ -1955,6 +1959,12 @@ try {
   if(htmlEl.className.indexOf("notranslate")<0) htmlEl.className += " notranslate";
   document.body.setAttribute("translate","no");
 } catch(e){}
+// Enregistre le service worker pour le fonctionnement hors-ligne
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("./service-worker.js").catch(function(){});
+  });
+}
 </script>
 
 </body>
