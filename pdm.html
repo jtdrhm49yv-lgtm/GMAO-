@@ -93,21 +93,37 @@ td.lbl{text-align:left;color:var(--text2);font-weight:600;}
   <!-- contenu injecte par JS -->
 </div>
 
+<script>
+// DETECTEUR D ERREUR (bloc separe : fonctionne meme si le grand code en dessous est casse)
+window.onerror=function(msg,src,line,col){
+  try{
+    var m=document.getElementById("main");
+    if(m){
+      m.innerHTML='<div style="background:rgba(240,72,72,0.12);border:1px solid #f04848;border-radius:12px;padding:14px;margin:14px 0;color:#f04848;font-size:13px;line-height:1.5;">'+
+      '<b>ERREUR DE CHARGEMENT</b><br>Le code de la page est endommage (souvent un collage incomplet ou une traduction du navigateur).<br><br>'+
+      '<span style="color:#9ab8a8;">Detail technique : '+String(msg).replace(/</g,"&lt;")+'<br>Ligne '+line+(col?', colonne '+col:'')+'</span></div>';
+    }
+  }catch(e){}
+  return false;
+};
+// Si au chargement la page est restee vide sans erreur capturee, on l indique aussi
+window.addEventListener("load",function(){
+  setTimeout(function(){
+    try{
+      var m=document.getElementById("main");
+      if(m&&!m.innerHTML.replace(/<!--.*?-->/g,"").trim()){
+        m.innerHTML='<div style="background:rgba(240,168,50,0.12);border:1px solid #f0a832;border-radius:12px;padding:14px;margin:14px 0;color:#f0a832;font-size:13px;">'+
+        '<b>PAGE VIDE</b><br>Le code ne s\'est pas execute et aucune erreur n\'a ete capturee. Le fichier est probablement incomplet (collage partiel).</div>';
+      }
+    }catch(e){}
+  },800);
+});
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
 "use strict";
-// Si une erreur JavaScript survient, on l affiche a l ecran (aide au diagnostic)
-window.onerror=function(msg,src,line){
-  try{
-    var m=document.getElementById("main");
-    if(m&&!m.innerHTML.trim()){
-      m.innerHTML='<div style="background:rgba(240,72,72,0.1);border:1px solid #f04848;border-radius:12px;padding:14px;margin:10px 0;color:#f04848;font-size:13px;">'+
-      '<b>Erreur de chargement</b><br>Le code de la page semble endommage (souvent un probleme de collage ou de traduction).<br><br>'+
-      '<span style="color:#9ab8a8;">Detail : '+String(msg).replace(/</g,"&lt;")+' (ligne '+line+')</span></div>';
-    }
-  }catch(e){}
-};
 /* =================== DONNEES DE REFERENCE =================== */
 var ENGINE_MODELS = ["C11","C13","C18","QSX15","6BT","NTA","QSZ13"];
 
