@@ -1,21 +1,33 @@
 // Service Worker - Drilling GMAO
-// Permet a l’application de fonctionner hors-ligne (sans reseau)
-// Version du cache : changer ce numero a chaque mise a jour importante pour forcer le rafraichissement
-var CACHE_NAME = “gmao-cache-v1”;
+// Strategie “cache d’abord” : l’app s’ouvre instantanement depuis le cache,
+// meme sans reseau. Le reseau sert seulement a mettre a jour en arriere-plan.
+// Changer le numero de version force le rafraichissement chez tout le monde.
+var CACHE_NAME = “gmao-cache-v3”;
 
-// Fichiers a mettre en cache des l’installation
-var URLS_TO_CACHE = [
+// Fichiers essentiels (l’app doit pouvoir s’ouvrir entierement avec ceux-la)
+var CORE = [
 “./”,
+“./accueil.html”,
 “./index.html”,
-“./manifest.json”,
+“./pdm.html”,
+“./manifest.json”
+];
+// Fichier externe (jsPDF) - mis en cache si possible, mais non bloquant
+var EXTRA = [
 “https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js”
 ];
 
-// Installation : on met en cache les fichiers essentiels
+// Installation : on met en cache les fichiers essentiels (de maniere fiable)
 self.addEventListener(“install”, function(event) {
 event.waitUntil(
 caches.open(CACHE_NAME).then(function(cache) {
-return cache.addAll(URLS_TO_CACHE).catch(function(){ /* ignore les echecs reseau partiels */ });
+// les fichiers du coeur sont indispensables
+return cache.addAll(CORE).then(function(){
+// jsPDF : on essaie, mais on n’echoue pas si le reseau coupe
+return Promise.all(EXTRA.map(function(url){
+return cache.add(url).catch(function(){});
+}));
+});
 })
 );
 self.skipWaiting();
@@ -28,30 +40,47 @@ caches.keys().then(function(keys) {
 return Promise.all(keys.map(function(key) {
 if (key !== CACHE_NAME) return caches.delete(key);
 }));
-})
+}).then(function(){ return self.clients.claim(); })
 );
-self.clients.claim();
 });
 
-// Strategie : “network first, fallback cache”
-// On essaie le reseau d’abord (pour avoir la derniere version), et si pas de reseau on prend le cache
+// Strategie “cache d’abord” :
+// 1) si le fichier est en cache -> on le sert TOUT DE SUITE (ouverture instantanee, meme hors-reseau)
+//    et on rafraichit le cache en arriere-plan si le reseau est dispo
+// 2) si pas en cache -> on va le chercher sur le reseau et on le met en cache
+// 3) si tout echoue et que c’est une navigation -> on renvoie l’accueil en cache
 self.addEventListener(“fetch”, function(event) {
 if (event.request.method !== “GET”) return;
 event.respondWith(
-fetch(event.request).then(function(response) {
-// si la requete reseau marche, on met a jour le cache et on renvoie la reponse
+caches.match(event.request).then(function(cached) {
+// mise a jour en arriere-plan (ne bloque pas la reponse)
+var networkFetch = fetch(event.request).then(function(response) {
+if (response && response.status === 200) {
 var copy = response.clone();
 caches.open(CACHE_NAME).then(function(cache) {
 cache.put(event.request, copy).catch(function(){});
 });
+}
 return response;
-}).catch(function() {
-// pas de reseau : on sert depuis le cache
-return caches.match(event.request).then(function(cached) {
-if (cached) return cached;
-// en dernier recours, pour une navigation, on renvoie l’index en cache
-if (event.request.mode === “navigate”) return caches.match(”./index.html”);
-});
+}).catch(function(){ return null; });
+
+```
+  // si on a le fichier en cache, on le renvoie immediatement
+  if (cached) return cached;
+
+  // sinon on attend le reseau
+  return networkFetch.then(function(response) {
+    if (response) return response;
+    // dernier recours : pour une navigation, renvoyer l'accueil en cache
+    if (event.request.mode === "navigate") {
+      return caches.match("./accueil.html").then(function(acc){
+        return acc || caches.match("./index.html");
+      });
+    }
+    return new Response("", {status: 503, statusText: "Hors-ligne"});
+  });
 })
+```
+
 );
 });
