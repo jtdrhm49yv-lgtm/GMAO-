@@ -2,7 +2,7 @@
   "name": "Drilling GMAO",
   "short_name": "Drilling_GMAO",
   "description": "Application de gestion de maintenance - Endeavour Mining Drilling",
-  "start_url": "./index.html",
+  "start_url": "./accueil.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
