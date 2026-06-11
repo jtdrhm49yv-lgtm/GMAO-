@@ -82,10 +82,11 @@ td.lbl{text-align:left;color:var(--text2);font-weight:600;}
 
 <div class="top">
   <div class="logo">&#128202;</div>
-  <div>
+  <div style="flex:1;">
     <h1>MAINTENANCE PREDICTIVE</h1>
     <div class="sub">Endeavour Mining &mdash; Analyse d'huile</div>
   </div>
+  <a href="./accueil.html" style="text-decoration:none;color:var(--amber);font-size:24px;padding:6px 4px;" title="Accueil">&#8962;</a>
 </div>
 
 <div class="main" id="main">
@@ -96,6 +97,17 @@ td.lbl{text-align:left;color:var(--text2);font-weight:600;}
 
 <script>
 "use strict";
+// Si une erreur JavaScript survient, on l affiche a l ecran (aide au diagnostic)
+window.onerror=function(msg,src,line){
+  try{
+    var m=document.getElementById("main");
+    if(m&&!m.innerHTML.trim()){
+      m.innerHTML='<div style="background:rgba(240,72,72,0.1);border:1px solid #f04848;border-radius:12px;padding:14px;margin:10px 0;color:#f04848;font-size:13px;">'+
+      '<b>Erreur de chargement</b><br>Le code de la page semble endommage (souvent un probleme de collage ou de traduction).<br><br>'+
+      '<span style="color:#9ab8a8;">Detail : '+String(msg).replace(/</g,"&lt;")+' (ligne '+line+')</span></div>';
+    }
+  }catch(e){}
+};
 /* =================== DONNEES DE REFERENCE =================== */
 var ENGINE_MODELS = ["C11","C13","C18","QSX15","6BT","NTA","QSZ13"];
 
