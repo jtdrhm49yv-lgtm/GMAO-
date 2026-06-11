@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+
+<html lang="en" translate="no" class="notranslate">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google" content="notranslate">
+<meta name="googlebot" content="notranslate">
+<meta http-equiv="Content-Language" content="en">
+<meta name="robots" content="notranslate">
+<title>Drilling GMAO</title>
+<meta name="apple-mobile-web-app-title" content="Drilling_GMAO">
+<meta name="application-name" content="Drilling_GMAO">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#080f0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+  --bg:#080f0c;--surface:#0f1a16;--surface2:#162219;
+  --border:#253d30;--border2:#2e4d3c;--green:#22c97a;--amber:#f0a832;
+  --text:#e8f2ec;--text2:#9ab8a8;--text3:#5a7868;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:radial-gradient(circle at 50% 0%,#0d1812,#080f0c 70%);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+.head{text-align:center;padding:48px 20px 10px;}
+.gear{width:74px;height:74px;border:3px solid var(--amber);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 18px;}
+.head h1{margin:0;font-size:24px;letter-spacing:3px;color:var(--amber);}
+.head .sub{font-size:12px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;margin-top:4px;}
+.choose{font-size:13px;color:var(--text2);text-align:center;margin:28px 0 16px;letter-spacing:1px;text-transform:uppercase;}
+.cards{flex:1;display:flex;flex-direction:column;gap:18px;padding:0 22px 40px;max-width:520px;margin:0 auto;width:100%;}
+.dash{display:block;text-decoration:none;color:inherit;background:linear-gradient(160deg,var(--surface2),var(--surface));border:1px solid var(--border2);border-radius:20px;padding:26px 22px;position:relative;overflow:hidden;}
+.dash:active{border-color:var(--amber);}
+.dash .ic{font-size:40px;margin-bottom:14px;}
+.dash h2{margin:0 0 6px;font-size:21px;}
+.dash p{margin:0;font-size:13.5px;color:var(--text2);line-height:1.5;}
+.dash .tag{position:absolute;top:18px;right:18px;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:20px;font-weight:700;}
+.tag-corr{background:rgba(34,201,122,0.15);color:var(--green);}
+.tag-pred{background:rgba(56,182,255,0.15);color:#38b6ff;}
+.dash .arrow{margin-top:16px;font-size:14px;color:var(--amber);font-weight:600;}
+.foot{text-align:center;font-size:11px;color:var(--text3);padding:16px;}
+</style>
+</head>
+<body translate="no" class="notranslate">
+<div class="head">
+  <div class="gear">&#9881;</div>
+  <h1>DRILLING GMAO</h1>
+  <div class="sub">Endeavour Mining</div>
+</div>
+
+<div class="choose">Choisis un espace de travail</div>
+
+<div class="cards">
+  <a class="dash" href="./index.html">
+    <span class="tag tag-corr">Corrective</span>
+    <div class="ic">&#128296;</div>
+    <h2>Maintenance corrective</h2>
+    <p>Rapports de panne, daily service, MDS, huile et work order. Generation PDF et partage WhatsApp.</p>
+    <div class="arrow">Ouvrir &#8594;</div>
+  </a>
+
+  <a class="dash" href="./pdm.html">
+    <span class="tag tag-pred">Predictive</span>
+    <div class="ic">&#128202;</div>
+    <h2>Maintenance predictive</h2>
+    <p>Suivi des analyses d'huile par machine et composant. Courbes de tendance et alertes (Fe, Cu, Si, eau, viscosite...).</p>
+    <div class="arrow">Ouvrir &#8594;</div>
+  </a>
+</div>
+
+<div class="foot">Endeavour Mining &mdash; Drilling Maintenance</div>
+
+<script>
+"use strict";
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){ navigator.serviceWorker.register("./service-worker.js").catch(function(){}); });
+}
+</script>
+
+</body>
+</html>
