@@ -101,7 +101,7 @@ window.onerror=function(msg,src,line,col){
     if(m){
       m.innerHTML='<div style="background:rgba(240,72,72,0.12);border:1px solid #f04848;border-radius:12px;padding:14px;margin:14px 0;color:#f04848;font-size:13px;line-height:1.5;">'+
       '<b>ERREUR DE CHARGEMENT</b><br>Le code de la page est endommage (souvent un collage incomplet ou une traduction du navigateur).<br><br>'+
-      '<span style="color:#9ab8a8;">Detail technique : '+String(msg).replace(/</g,"&lt;")+'<br>Ligne '+line+(col?', colonne '+col:'')+'</span></div>';
+      '<span style="color:#9ab8a8;">Detail technique : '+String(msg).replace(/</g,"&lt;")+'<br>Ligne '+line+(col?", colonne "+col:"")+'</span></div>';
     }
   }catch(e){}
   return false;
@@ -113,7 +113,7 @@ window.addEventListener("load",function(){
       var m=document.getElementById("main");
       if(m&&!m.innerHTML.replace(/<!--.*?-->/g,"").trim()){
         m.innerHTML='<div style="background:rgba(240,168,50,0.12);border:1px solid #f0a832;border-radius:12px;padding:14px;margin:14px 0;color:#f0a832;font-size:13px;">'+
-        '<b>PAGE VIDE</b><br>Le code ne s\'est pas execute et aucune erreur n\'a ete capturee. Le fichier est probablement incomplet (collage partiel).</div>';
+        '<b>PAGE VIDE</b><br>Le code ne s&#39;est pas execute et aucune erreur n&#39;a ete capturee. Le fichier est probablement incomplet (collage partiel).</div>';
       }
     }catch(e){}
   },800);
@@ -218,7 +218,7 @@ function render(){
 /* =================== ECRAN ACCUEIL (liste machines) =================== */
 function renderHome(){
   var h='<div class="page-title">Mes <span>machines</span></div>';
-  h+='<button class="btn btn-amber" onclick="go(\'addMachine\')">+ Ajouter une machine</button>';
+  h+='<button class="btn btn-amber" onclick="go(&#39;addMachine&#39;)">+ Ajouter une machine</button>';
   if(!DB.machines.length){
     h+='<div class="empty">Aucune machine pour le moment.<br>Ajoute ta premiere foreuse pour commencer le suivi predictif.</div>';
     return h;
@@ -228,7 +228,7 @@ function renderHome(){
     var mc=DB.machines[i];
     var st=machineStatus(mc);
     var pill=st==="crit"?'<span class="pill pill-crit">Alerte</span>':(st==="warn"?'<span class="pill pill-warn">A surveiller</span>':(st==="ok"?'<span class="pill pill-ok">OK</span>':'<span class="pill pill-na">Pas de donnee</span>'));
-    h+='<div class="mitem" onclick="go(\'machine\',\''+mc.id+'\',0)">'+
+    h+='<div class="mitem" onclick="go(&#39;machine&#39;,&#39;'+mc.id+'&#39;,0)">'+
        '<div><div class="mname">'+esc(mc.name)+'</div><div class="mmodel">Moteur '+esc(mc.model||"-")+' &middot; '+(mc.components?mc.components.length:0)+' composants</div></div>'+
        '<div>'+pill+'</div></div>';
   }
@@ -286,11 +286,11 @@ function elementLevel(key, last, prev){
 
 /* =================== AJOUTER UNE MACHINE =================== */
 function renderAddMachine(){
-  var h='<button class="back" onclick="go(\'home\')">&#8592; Retour</button>';
+  var h='<button class="back" onclick="go(&#39;home&#39;)">&#8592; Retour</button>';
   h+='<div class="page-title">Ajouter une <span>machine</span></div>';
   h+='<div class="card">';
   h+='<div class="field"><label>Numero de machine</label><input id="nm-name" placeholder="ex: DR218"></div>';
-  var opts='';
+  var opts="";
   for(var i=0;i<ENGINE_MODELS.length;i++){ opts+='<option>'+ENGINE_MODELS[i]+'</option>'; }
   h+='<div class="field"><label>Modele de moteur</label><select id="nm-model">'+opts+'</select></div>';
   h+='<div class="field"><label>Composants suivis</label><div class="muted" style="margin-bottom:8px;">Decoche ceux qui ne concernent pas cette machine.</div><div id="nm-comps">';
@@ -300,7 +300,7 @@ function renderAddMachine(){
   h+='</div></div>';
   h+='</div>';
   h+='<button class="btn btn-green" onclick="saveNewMachine()">Enregistrer la machine</button>';
-  h+='<button class="btn btn-ghost" onclick="go(\'home\')">Annuler</button>';
+  h+='<button class="btn btn-ghost" onclick="go(&#39;home&#39;)">Annuler</button>';
   return h;
 }
 function saveNewMachine(){
@@ -324,16 +324,16 @@ function renderMachine(){
   if(!mc) return renderHome();
   if(view.compIdx>=mc.components.length) view.compIdx=0;
   if(!view.mode) view.mode="etat";
-  var h='<button class="back" onclick="go(\'home\')">&#8592; Mes machines</button>';
+  var h='<button class="back" onclick="go(&#39;home&#39;)">&#8592; Mes machines</button>';
   h+='<div class="page-title">'+esc(mc.name)+' <span>'+esc(mc.model||"")+'</span></div>';
   // bascule Etat / Huile / Parametres / Archive
   h+='<div class="comp-tabs" style="margin-bottom:14px;">';
-  h+='<div class="comp-tab'+(view.mode==="etat"?' active':'')+'" onclick="setMode(\'etat\')">&#128300; Etat</div>';
-  h+='<div class="comp-tab'+(view.mode==="suivi"?' active':'')+'" onclick="setMode(\'suivi\')">&#128200; Huile</div>';
+  h+='<div class="comp-tab'+(view.mode==="etat"?" active":"")+'" onclick="setMode(&#39;etat&#39;)">&#128300; Etat</div>';
+  h+='<div class="comp-tab'+(view.mode==="suivi"?" active":"")+'" onclick="setMode(&#39;suivi&#39;)">&#128200; Huile</div>';
   var nParams=(mc.paramReadings?mc.paramReadings.length:0);
-  h+='<div class="comp-tab'+(view.mode==="params"?' active':'')+'" onclick="setMode(\'params\')">&#127777; Parametres'+(nParams?" ("+nParams+")":"")+'</div>';
+  h+='<div class="comp-tab'+(view.mode==="params"?" active":"")+'" onclick="setMode(&#39;params&#39;)">&#127777; Parametres'+(nParams?" ("+nParams+")":"")+'</div>';
   var nDocs=(mc.docs?mc.docs.length:0);
-  h+='<div class="comp-tab'+(view.mode==="archive"?' active':'')+'" onclick="setMode(\'archive\')">&#128206; Archive'+(nDocs?" ("+nDocs+")":"")+'</div>';
+  h+='<div class="comp-tab'+(view.mode==="archive"?" active":"")+'" onclick="setMode(&#39;archive&#39;)">&#128206; Archive'+(nDocs?" ("+nDocs+")":"")+'</div>';
   h+='</div>';
   if(view.mode==="archive") return h+renderArchive(mc);
   if(view.mode==="params") return h+renderParams(mc);
@@ -346,12 +346,12 @@ function renderMachine(){
   for(var i=0;i<mc.components.length;i++){
     var st=componentStatus(mc.components[i]);
     var dot=st==="crit"?" &#128308;":(st==="warn"?" &#128992;":(st==="ok"?" &#128994;":""));
-    h+='<div class="comp-tab'+(i===view.compIdx?' active':'')+'" onclick="go(\'machine\',\''+mc.id+'\','+i+')">'+esc(mc.components[i].name)+dot+'</div>';
+    h+='<div class="comp-tab'+(i===view.compIdx?" active":"")+'" onclick="go(&#39;machine&#39;,&#39;'+mc.id+'&#39;,'+i+')">'+esc(mc.components[i].name)+dot+'</div>';
   }
   h+='</div>';
   // composant courant
   h+='<div class="card"><div class="card-h">'+esc(comp.name)+'<span class="muted">'+esc(comp.oil)+'</span></div>';
-  h+='<button class="btn btn-amber" onclick="go(\'addSample\',\''+mc.id+'\','+view.compIdx+')">+ Nouveau prelevement</button>';
+  h+='<button class="btn btn-amber" onclick="go(&#39;addSample&#39;,&#39;'+mc.id+'&#39;,'+view.compIdx+')">+ Nouveau prelevement</button>';
   if(!comp.samples||!comp.samples.length){
     h+='<div class="empty">Aucun prelevement pour ce composant.<br>Ajoute les valeurs du rapport labo pour voir les tendances.</div></div>';
     return h;
@@ -374,7 +374,7 @@ function setMode(mode){ view.mode=mode; render(); window.scrollTo(0,0); }
 /* =================== ARCHIVE DE RAPPORTS (PDF / photos) =================== */
 function renderArchive(mc){
   var h='<div class="card"><div class="card-h">Rapports labo</div>';
-  h+='<div class="muted" style="margin-bottom:10px;">Ajoute le PDF ou la photo du rapport d\'huile. Il sera garde dans l\'app, classe par date.</div>';
+  h+='<div class="muted" style="margin-bottom:10px;">Ajoute le PDF ou la photo du rapport d&#39;huile. Il sera garde dans l&#39;app, classe par date.</div>';
   h+='<label class="btn btn-amber" style="text-align:center;cursor:pointer;">+ Ajouter un rapport (PDF / photo)'+
      '<input type="file" accept="application/pdf,image/*" style="display:none;" onchange="addDoc(event)"></label>';
   h+='</div>';
@@ -384,10 +384,10 @@ function renderArchive(mc){
   for(var i=0;i<docs.length;i++){
     var d=docs[i];
     var icon=d.type&&d.type.indexOf("pdf")>=0?"&#128196;":"&#128247;";
-    h+='<div class="sample-row"><div onclick="openDoc(\''+mc.id+'\',\''+d.id+'\')" style="flex:1;cursor:pointer;">'+
+    h+='<div class="sample-row"><div onclick="openDoc(&#39;'+mc.id+'&#39;,&#39;'+d.id+'&#39;)" style="flex:1;cursor:pointer;">'+
        '<div style="font-weight:600;">'+icon+' '+esc(d.name||"Rapport")+'</div>'+
        '<div class="muted">'+esc(d.date||"")+(d.label?" &middot; "+esc(d.label):"")+'</div></div>'+
-       '<button class="tag-rm" onclick="delDoc(\''+mc.id+'\',\''+d.id+'\')">&#10005;</button></div>';
+       '<button class="tag-rm" onclick="delDoc(&#39;'+mc.id+'&#39;,&#39;'+d.id+'&#39;)">&#10005;</button></div>';
   }
   h+='</div>';
   return h;
@@ -443,7 +443,7 @@ function machineParams(mc){
 function renderParams(mc){
   var params=machineParams(mc);
   var h='<div class="card"><div class="card-h">Relever les parametres</div>';
-  h+='<div class="muted" style="margin-bottom:10px;">Note les valeurs lues sur le tableau de bord ou via Cat ET / Cummins. Laisse vide ce que tu n\'as pas.</div>';
+  h+='<div class="muted" style="margin-bottom:10px;">Note les valeurs lues sur le tableau de bord ou via Cat ET / Cummins. Laisse vide ce que tu n&#39;as pas.</div>';
   h+='<div class="field"><label>Date du releve</label><input type="date" id="pr-date"></div>';
   h+='<div class="field"><label>Heures machine (optionnel)</label><input type="number" inputmode="numeric" id="pr-hours"></div>';
   h+='<div class="row2">';
@@ -454,8 +454,8 @@ function renderParams(mc){
   h+='</div>';
   h+='<div class="field"><label>Observations (bruits, fumees, fuites, demarrage...)</label><textarea id="pr-obs" rows="2" placeholder="ex: Fumee bleue au demarrage, bruit au compresseur"></textarea></div>';
 
-h+=’<button class="add-link" onclick="addCustomParam(\''+mc.id+'\')">+ Ajouter un parametre personnalise</button>’;
-h+=’<button class="btn btn-green" onclick="saveParamReading(\''+mc.id+'\')" style="margin-top:8px;">Enregistrer le releve</button>’;
+h+=’<button class="add-link" onclick="addCustomParam(&#39;'+mc.id+'&#39;)">+ Ajouter un parametre personnalise</button>’;
+h+=’<button class="btn btn-green" onclick="saveParamReading(&#39;'+mc.id+'&#39;)" style="margin-top:8px;">Enregistrer le releve</button>’;
 h+=’</div>’;
 // historique des releves
 var readings=(mc.paramReadings||[]).slice().sort(function(a,b){ return (b.date||””).localeCompare(a.date||””); });
@@ -473,7 +473,7 @@ var col=lvl===“crit”?“var(–red)”:(lvl===“warn”?“var(–amber)”
 var val=rd[pk]; if(val===undefined||val===””) val=”-”;
 h+=’<td style=“color:’+col+’;font-weight:’+(lvl!==“ok”?“700”:“400”)+’;”>’+esc(val)+’</td>’;
 }
-h+=’<td><button class="tag-rm" onclick="delParamReading(\''+mc.id+'\','+r+')">✕</button></td></tr>’;
+h+=’<td><button class="tag-rm" onclick="delParamReading(&#39;'+mc.id+'&#39;,'+r+')">✕</button></td></tr>’;
 if(rd.obs){ h+=’<tr><td colspan="'+(params.length+2)+'" style="text-align:left;color:var(--text2);font-size:12px;padding:4px 6px 10px;border-bottom:1px solid var(--border);">📝 ‘+esc(rd.obs)+’</td></tr>’; }
 }
 h+=’</table></div></div>’;
@@ -561,7 +561,7 @@ var oil=machineStatus(mc);        // statut analyses d huile (existant)
 var par=paramsStatus(mc);         // statut parametres
 var his=pannesStatus(mc);         // statut historique pannes
 var cross=crossStatus(oil,par,his);
-var h=’’;
+var h=””;
 // bandeau statut global
 var bg=cross===“crit”?“rgba(240,72,72,0.1)”:(cross===“warn”?“rgba(240,168,50,0.1)”:(cross===“ok”?“rgba(34,201,122,0.1)”:“rgba(90,120,104,0.1)”));
 var col=cross===“crit”?“var(–red)”:(cross===“warn”?“var(–amber)”:(cross===“ok”?“var(–green)”:“var(–text3)”));
@@ -584,38 +584,38 @@ h+=’<div class="muted" style="margin-bottom:10px;">Ajoute les pannes recentes 
 h+=’<div class="row2"><div class="field"><label>Date</label><input type="date" id="pn-date"></div>’+
 ‘<div class="field"><label>Composant / organe</label><input id="pn-comp" placeholder="ex: Moteur, Compresseur"></div></div>’;
 h+=’<div class="field"><label>Description courte</label><input id="pn-desc" placeholder="ex: Surchauffe moteur"></div>’;
-h+=’<button class="btn btn-green" onclick="addPanneHist(\''+mc.id+'\')">Ajouter cette panne</button>’;
+h+=’<button class="btn btn-green" onclick="addPanneHist(&#39;'+mc.id+'&#39;)">Ajouter cette panne</button>’;
 var pannes=(mc.pannes||[]).slice().sort(function(a,b){ return (b.date||””).localeCompare(a.date||””); });
 if(pannes.length){
 for(var i=0;i<pannes.length;i++){
 var pn=pannes[i];
 var recent=isRecent(pn.date);
-h+=’<div class="sample-row"><div style="flex:1;"><div style="font-weight:600;">’+esc(pn.comp||”-”)+(recent?’ <span class="pill pill-warn">recent</span>’:’’)+’</div>’+
+h+=’<div class="sample-row"><div style="flex:1;"><div style="font-weight:600;">’+esc(pn.comp||”-”)+(recent?’ <span class="pill pill-warn">recent</span>’:””)+’</div>’+
 ‘<div class="muted">’+esc(pn.date||””)+(pn.desc?” · “+esc(pn.desc):””)+’</div></div>’+
-‘<button class="tag-rm" onclick="delPanneHist(\''+mc.id+'\','+i+')">✕</button></div>’;
+‘<button class="tag-rm" onclick="delPanneHist(&#39;'+mc.id+'&#39;,'+i+')">✕</button></div>’;
 }
 }
 h+=’</div>’;
 // suivi du dernier PM + pieces remplacees (contexte pour interpreter les alertes)
 h+=’<div class="card"><div class="card-h">Maintenance recente</div>’;
 var pmInfo=mc.lastPM||{};
-var pmTxt=pmInfo.date?(‘Dernier PM : <b>’+esc(pmInfo.date)+’</b>’+(pmInfo.hours?’ a ‘+esc(pmInfo.hours)+’ h’:’’)+daysSince(pmInfo.date)):‘Dernier PM : <span class="muted">non renseigne</span>’;
+var pmTxt=pmInfo.date?(‘Dernier PM : <b>’+esc(pmInfo.date)+’</b>’+(pmInfo.hours?” a “+esc(pmInfo.hours)+” h”:””)+daysSince(pmInfo.date)):‘Dernier PM : <span class="muted">non renseigne</span>’;
 h+=’<div style="margin-bottom:10px;font-size:14px;">’+pmTxt+’</div>’;
 h+=’<div class="row2"><div class="field"><label>Date du dernier PM</label><input type=“date” id=“pm-date” value=”’+esc(pmInfo.date||””)+’”></div>’+
 ‘<div class="field"><label>Heures au PM</label><input type=“number” inputmode=“numeric” id=“pm-hours” value=”’+esc(pmInfo.hours||””)+’”></div></div>’;
-h+=’<button class="btn btn-ghost" onclick="savePM(\''+mc.id+'\')" style="margin-bottom:14px;">Enregistrer le PM</button>’;
+h+=’<button class="btn btn-ghost" onclick="savePM(&#39;'+mc.id+'&#39;)" style="margin-bottom:14px;">Enregistrer le PM</button>’;
 // pieces remplacees recemment
 h+=’<div class="muted" style="margin-bottom:8px;">Pieces remplacees recemment : evite de confondre un rodage normal (ex: Cu qui monte apres changement de coussinets) avec une vraie usure.</div>’;
 h+=’<div class="row2"><div class="field"><label>Date</label><input type="date" id="pt-date"></div>’+
 ‘<div class="field"><label>Piece remplacee</label><input id="pt-name" placeholder="ex: Coussinets, Turbo"></div></div>’;
-h+=’<button class="btn btn-ghost" onclick="addPart(\''+mc.id+'\')">Ajouter la piece</button>’;
+h+=’<button class="btn btn-ghost" onclick="addPart(&#39;'+mc.id+'&#39;)">Ajouter la piece</button>’;
 var parts=(mc.parts||[]).slice().sort(function(a,b){ return (b.date||””).localeCompare(a.date||””); });
 for(var p2=0;p2<parts.length;p2++){
 var pt=parts[p2];
-var rec=isRecent(pt.date)?’ <span class="pill pill-na">recent - rodage possible</span>’:’’;
+var rec=isRecent(pt.date)?’ <span class="pill pill-na">recent - rodage possible</span>’:””;
 h+=’<div class="sample-row"><div style="flex:1;"><div style="font-weight:600;">’+esc(pt.name||”-”)+rec+’</div>’+
 ‘<div class="muted">’+esc(pt.date||””)+’</div></div>’+
-‘<button class="tag-rm" onclick="delPart(\''+mc.id+'\','+p2+')">✕</button></div>’;
+‘<button class="tag-rm" onclick="delPart(&#39;'+mc.id+'&#39;,'+p2+')">✕</button></div>’;
 }
 h+=’</div>’;
 return h;
@@ -625,7 +625,7 @@ if(!dateStr) return “”;
 var d=new Date(dateStr+“T12:00:00”); if(isNaN(d.getTime())) return “”;
 var n=Math.floor((Date.now()-d.getTime())/(1000*60*60*24));
 if(n<0) return “”;
-return ’ <span class="muted">(il y a ‘+n+’ jour’+(n>1?‘s’:’’)+’)</span>’;
+return ’ <span class="muted">(il y a ‘+n+’ jour’+(n>1?“s”:””)+’)</span>’;
 }
 function savePM(mid){
 var mc=getMachine(mid); if(!mc) return;
@@ -719,10 +719,10 @@ alerts.push({lvl:lvl, comp:comp.name, el:ELEMENTS[e].label, val:last[key], unit:
 }
 }
 }
-if(!alerts.length) return ‘’;
+if(!alerts.length) return “”;
 // trier: crit d abord
 alerts.sort(function(a,b){ return (a.lvl===“crit”?0:1)-(b.lvl===“crit”?0:1); });
-var h=’’;
+var h=””;
 for(var a=0;a<alerts.length;a++){
 var al=alerts[a];
 var cls=al.lvl===“crit”?“alert-crit”:“alert-warn”;
@@ -750,7 +750,7 @@ var color=lvl===“crit”?“var(–red)”:(lvl===“warn”?“var(–amber)�
 var val=s[key]; if(val===undefined||val===””) val=”-”;
 h+=’<td style=“color:’+color+’;font-weight:’+(lvl!==“ok”?“700”:“400”)+’;”>’+esc(val)+’</td>’;
 }
-h+=’<td><button class="tag-rm" onclick="delSample(\''+view.machineId+'\','+view.compIdx+','+i+')">✕</button></td>’;
+h+=’<td><button class="tag-rm" onclick="delSample(&#39;'+view.machineId+'&#39;,'+view.compIdx+','+i+')">✕</button></td>’;
 h+=’</tr>’;
 }
 h+=’</table></div>’;
@@ -768,7 +768,7 @@ function renderAddSample(){
 var mc=getMachine(view.machineId);
 if(!mc) return renderHome();
 var comp=mc.components[view.compIdx];
-var h=’<button class="back" onclick="go(\'machine\',\''+mc.id+'\','+view.compIdx+')">← ‘+esc(mc.name)+’</button>’;
+var h=’<button class="back" onclick="go(&#39;machine&#39;,&#39;'+mc.id+'&#39;,'+view.compIdx+')">← ‘+esc(mc.name)+’</button>’;
 h+=’<div class="page-title">Prelevement <span>’+esc(comp.name)+’</span></div>’;
 h+=’<div class="card">’;
 h+=’<div class="row2"><div class="field"><label>Date du prelevement</label><input type="date" id="s-date"></div>’;
@@ -781,7 +781,7 @@ h+=’<div class="field"><label>’+esc(el.label)+(el.unit?” (”+el.unit+”)
 }
 h+=’</div></div>’;
 h+=’<button class="btn btn-green" onclick="saveSample()">Enregistrer le prelevement</button>’;
-h+=’<button class="btn btn-ghost" onclick="go(\'machine\',\''+mc.id+'\','+view.compIdx+')">Annuler</button>’;
+h+=’<button class="btn btn-ghost" onclick="go(&#39;machine&#39;,&#39;'+mc.id+'&#39;,'+view.compIdx+')">Annuler</button>’;
 return h;
 }
 function saveSample(){
