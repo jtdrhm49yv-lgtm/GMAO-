@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 
+<!-- PDM VERSION 7 AUTO-REPARANTE -->
+
 <html lang="en" translate="no" class="notranslate">
 <head>
 <meta charset="UTF-8">
@@ -122,8 +124,7 @@ window.addEventListener("load",function(){
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<script>
-"use strict";
+<script type="text/plain" id="pdmsrc">
 /* =================== DONNEES DE REFERENCE =================== */
 var ENGINE_MODELS = ["C11","C13","C18","QSX15","6BT","NTA","QSZ13"];
 
@@ -871,6 +872,22 @@ window.addEventListener(“load”,function(){ navigator.serviceWorker.register(
 
 /* =================== DEMARRAGE =================== */
 render();
+</script>
+
+<script>
+(function(){
+  var id=String.fromCharCode(112,100,109,115,114,99);
+  var el=document.getElementById(id);
+  if(!el){return;}
+  var t=el.textContent;
+  t=t.replace(/[\u2018\u2019\u02BC\u00B4\u0060]/g,String.fromCharCode(39));
+  t=t.replace(/[\u201C\u201D\u00AB\u00BB]/g,String.fromCharCode(34));
+  try{
+    (0,eval)(t);
+  }catch(e){
+    throw e;
+  }
+})();
 </script>
 
 </body>
