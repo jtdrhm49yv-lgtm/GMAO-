@@ -2,7 +2,7 @@
 // Strategie “cache d’abord” : l’app s’ouvre instantanement depuis le cache,
 // meme sans reseau. Le reseau sert seulement a mettre a jour en arriere-plan.
 // Changer le numero de version force le rafraichissement chez tout le monde.
-var CACHE_NAME = “gmao-cache-v4”;
+var CACHE_NAME = “gmao-cache-v5”;
 
 // Fichiers essentiels (l’app doit pouvoir s’ouvrir entierement avec ceux-la)
 var CORE = [
@@ -54,7 +54,7 @@ if (key !== CACHE_NAME) return caches.delete(key);
 self.addEventListener(“fetch”, function(event) {
 if (event.request.method !== “GET”) return;
 event.respondWith(
-caches.match(event.request).then(function(cached) {
+caches.match(event.request, {ignoreSearch:true}).then(function(cached) {
 // mise a jour en arriere-plan (ne bloque pas la reponse)
 var networkFetch = fetch(event.request).then(function(response) {
 if (response && response.status === 200) {
@@ -75,8 +75,8 @@ return response;
     if (response) return response;
     // dernier recours : pour une navigation, renvoyer l'accueil en cache
     if (event.request.mode === "navigate") {
-      return caches.match("./accueil.html").then(function(acc){
-        return acc || caches.match("./index.html");
+      return caches.match("./accueil.html", {ignoreSearch:true}).then(function(acc){
+        return acc || caches.match("./index.html", {ignoreSearch:true});
       });
     }
     return new Response("", {status: 503, statusText: "Hors-ligne"});
