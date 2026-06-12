@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<!-- PDM VERSION 10 AUTO-REPARANTE -->
+<!-- PDM VERSION 12 AUTO-REPARANTE -->
 
 <html lang="en" translate="no" class="notranslate">
 <head>
@@ -182,6 +182,15 @@ var DEFAULT_THRESHOLDS = {
 };
 
 /* =================== STOCKAGE =================== */
+// num() : accepte la virgule OU le point comme separateur decimal (26,71 ou 26.71)
+function num(x){
+  if(x==null) return NaN;
+  var s=String(x).trim().replace(/\s/g,"").replace(",",".");
+  // "<1" ou "<0.5" : on prend la moitie de la valeur seuil (proche de 0)
+  if(s.charAt(0)==="<"){ var lim=parseFloat(s.substring(1)); return isNaN(lim)?0:lim/2; }
+  if(s.charAt(0)===">"){ var lim2=parseFloat(s.substring(1)); return isNaN(lim2)?NaN:lim2; }
+  return parseFloat(s);
+}
 var PDM_KEY="pdm_v1";
 var DB = loadDB();
 function loadDB(){
@@ -211,6 +220,7 @@ function render(){
   else if(view.screen==="machine") m.innerHTML=renderMachine();
   else if(view.screen==="addMachine") m.innerHTML=renderAddMachine();
   else if(view.screen==="addSample") m.innerHTML=renderAddSample();
+  else if(view.screen==="pdfReview") m.innerHTML=renderPdfReview();
   else m.innerHTML=renderHome();
   // dessiner les graphiques apres injection
   if(view.screen==="machine"&&view.mode==="suivi") setTimeout(drawCharts,30);
@@ -264,7 +274,7 @@ function componentStatus(comp){
 }
 // niveau d un element : "ok" / "warn" / "crit" selon seuil ET tendance
 function elementLevel(key, last, prev){
-  var v=parseFloat(last[key]);
+  var v=num(last[key]);
   if(isNaN(v)) return "ok";
   var th=DEFAULT_THRESHOLDS[key];
   var level="ok";
@@ -275,13 +285,13 @@ function elementLevel(key, last, prev){
   }
   if(key==="visc"){
     // viscosite: on se base surtout sur la tendance (variation > 15% = warn, >25% = crit)
-    if(prev){ var pv=parseFloat(prev[key]); if(!isNaN(pv)&&pv>0){ var ch=Math.abs(v-pv)/pv; if(ch>=0.25) level="crit"; else if(ch>=0.15) level="warn"; } }
+    if(prev){ var pv=num(prev[key]); if(!isNaN(pv)&&pv>0){ var ch=Math.abs(v-pv)/pv; if(ch>=0.25) level="crit"; else if(ch>=0.15) level="warn"; } }
     return level;
   }
   // elements d usure / contamination : seuil
   if(th){ if(v>=th.crit) level="crit"; else if(v>=th.warn) level="warn"; }
   // tendance : si la valeur a plus que double par rapport au prelevement precedent -> au moins warn
-  if(prev){ var p=parseFloat(prev[key]); if(!isNaN(p)&&p>0&&v>=2*p&&v>=(th?th.warn*0.5:5)){ if(level==="ok") level="warn"; } }
+  if(prev){ var p=num(prev[key]); if(!isNaN(p)&&p>0&&v>=2*p&&v>=(th?th.warn*0.5:5)){ if(level==="ok") level="warn"; } }
   return level;
 }
 
@@ -352,6 +362,7 @@ function renderMachine(){
   h+='</div>';
   // composant courant
   h+='<div class="card"><div class="card-h">'+esc(comp.name)+'<span class="muted">'+esc(comp.oil)+'</span></div>';
+  h+='<label class="btn btn-ghost" style="text-align:center;cursor:pointer;display:block;">&#128196; Lire un rapport PDF (remplissage auto)<input type="file" accept="application/pdf" style="display:none;" onchange="readLabPDF(event)"></label>';
   h+='<button class="btn btn-amber" onclick="go(\u0027addSample\u0027,\u0027'+mc.id+'\u0027,'+view.compIdx+')">+ Nouveau prelevement</button>';
   if(!comp.samples||!comp.samples.length){
     h+='<div class="empty">Aucun prelevement pour ce composant.<br>Ajoute les valeurs du rapport labo pour voir les tendances.</div></div>';
@@ -492,8 +503,8 @@ var crit=prompt(“Seuil rouge (laisse vide si aucun) :”,””);
 if(!mc.params) mc.params=DEFAULT_PARAMS.slice();
 var key=“p”+Date.now();
 var obj={key:key, label:label, unit:unit, dir:(dir===“low”?“low”:“high”)};
-if(dir===“low”){ obj.lowWarn=warn!==””?parseFloat(warn):null; obj.lowCrit=crit!==””?parseFloat(crit):null; }
-else { obj.warn=warn!==””?parseFloat(warn):null; obj.crit=crit!==””?parseFloat(crit):null; }
+if(dir===“low”){ obj.lowWarn=warn!==””?num(warn):null; obj.lowCrit=crit!==””?num(crit):null; }
+else { obj.warn=warn!==””?num(warn):null; obj.crit=crit!==””?num(crit):null; }
 mc.params.push(obj);
 saveDB(); render();
 }
@@ -526,7 +537,7 @@ saveDB(); render();
 }
 // niveau d un parametre : ok / warn / crit
 function paramLevel(p, val){
-var v=parseFloat(val);
+var v=num(val);
 if(isNaN(v)) return “ok”;
 if(p.dir===“low”){
 if(p.lowCrit!=null&&v<=p.lowCrit) return “crit”;
@@ -729,7 +740,7 @@ var al=alerts[a];
 var cls=al.lvl===“crit”?“alert-crit”:“alert-warn”;
 var word=al.lvl===“crit”?“CRITIQUE”:“A surveiller”;
 var trend=””;
-if(al.prev){ var pv=parseFloat(al.prev[al.key]); var cv=parseFloat(al.val); if(!isNaN(pv)&&!isNaN(cv)){ if(cv>pv) trend=” (en hausse)”; else if(cv<pv) trend=” (en baisse)”; } }
+if(al.prev){ var pv=num(al.prev[al.key]); var cv=num(al.val); if(!isNaN(pv)&&!isNaN(cv)){ if(cv>pv) trend=” (en hausse)”; else if(cv<pv) trend=” (en baisse)”; } }
 h+=’<div class="alert-box '+cls+'"><div class="at">’+word+’ · ‘+esc(al.comp)+’</div>’+esc(al.el)+’ = ‘+esc(al.val)+’ ‘+esc(al.unit)+trend+’</div>’;
 }
 return h;
@@ -819,7 +830,7 @@ var ctx=cv.getContext(“2d”); var W=cv.width, H=cv.height;
 ctx.clearRect(0,0,W,H);
 // valeurs numeriques
 var pts=[];
-for(var i=0;i<samples.length;i++){ var v=parseFloat(samples[i][el.key]); pts.push(isNaN(v)?null:v); }
+for(var i=0;i<samples.length;i++){ var v=num(samples[i][el.key]); pts.push(isNaN(v)?null:v); }
 var vals=pts.filter(function(x){return x!==null;});
 if(!vals.length){ ctx.fillStyle=”#5a7868”; ctx.font=“13px sans-serif”; ctx.fillText(“Pas de donnee”,10,H/2); return; }
 var max=Math.max.apply(null,vals), min=Math.min.apply(null,vals);
@@ -863,6 +874,228 @@ ctx.fillStyle=col; ctx.beginPath(); ctx.arc(X(q),Y(pts[q]),3.5,0,Math.PI*2); ctx
 function drawThreshold(ctx,y,x1,x2,color){
 ctx.save(); ctx.strokeStyle=color; ctx.globalAlpha=0.5; ctx.setLineDash([4,4]); ctx.lineWidth=1;
 ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke(); ctx.restore();
+}
+
+/* =================== LECTURE AUTO DES RAPPORTS PDF =================== */
+var PDF_LIB_URL=“https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js”;
+var PDF_WORKER_URL=“https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js”;
+var pdfParse=null; // resultats temporaires en attente de validation
+
+function ensurePdfLib(cb){
+if(window.pdfjsLib){ cb(true); return; }
+var s=document.createElement(“script”);
+s.src=PDF_LIB_URL;
+s.onload=function(){ cb(!!window.pdfjsLib); };
+s.onerror=function(){ cb(false); };
+document.head.appendChild(s);
+}
+
+function readLabPDF(ev){
+var file=ev.target.files&&ev.target.files[0];
+ev.target.value=””;
+if(!file) return;
+var m=document.getElementById(“main”);
+if(m) m.innerHTML=’<div class="empty">Lecture du PDF en cours…</div>’;
+ensurePdfLib(function(ok){
+if(!ok){ alert(“Module PDF non charge. Ouvre la page une fois avec du reseau, ensuite ca marchera hors-ligne.”); render(); return; }
+window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDF_WORKER_URL;
+var reader=new FileReader();
+reader.onload=function(e){
+window.pdfjsLib.getDocument({data:e.target.result}).promise.then(function(doc){
+var pages=[]; var done=0; var total=doc.numPages;
+for(var p=1;p<=total;p++){
+(function(pn){
+doc.getPage(pn).then(function(page){ return page.getTextContent(); }).then(function(tc){
+pages[pn-1]=linesFromTextContent(tc);
+done++;
+if(done===total) finishPdfParse(pages);
+}).catch(function(){ pages[pn-1]=[]; done++; if(done===total) finishPdfParse(pages); });
+})(p);
+}
+}).catch(function(){ alert(“Impossible de lire ce PDF.”); render(); });
+};
+reader.onerror=function(){ alert(“Impossible de lire ce fichier.”); render(); };
+reader.readAsArrayBuffer(file);
+});
+}
+
+// regroupe les fragments de texte du PDF en lignes (par position verticale)
+function linesFromTextContent(tc){
+var rows={};
+for(var i=0;i<tc.items.length;i++){
+var it=tc.items[i];
+if(!it.str||!it.str.trim()) continue;
+var y=Math.round(it.transform[5]);
+var key=null;
+for(var k in rows){ if(Math.abs(Number(k)-y)<=2){ key=k; break; } }
+if(key===null) key=String(y);
+if(!rows[key]) rows[key]=[];
+rows[key].push({x:it.transform[4], s:it.str});
+}
+var ys=Object.keys(rows).map(Number).sort(function(a,b){ return b-a; });
+var lines=[];
+for(var j=0;j<ys.length;j++){
+var items=rows[String(ys[j])]||rows[ys[j]];
+items.sort(function(a,b){ return a.x-b.x; });
+var txt=items.map(function(o){ return o.s; }).join(” “).replace(/\s+/g,” “).trim();
+if(txt) lines.push(txt);
+}
+return lines;
+}
+
+// champs reconnus dans les rapports labo
+var PDF_FIELDS=[
+{key:“fe”, re:/^Iron\s*(Fe)/i},
+{key:“cr”, re:/^Chromium/i},
+{key:“cu”, re:/^Copper/i},
+{key:“al”, re:/^Alumini?um/i},
+{key:“si”, re:/^Silicon\s*(Si)/i},
+{key:“water”, re:/^Water.*ppm/i},
+{key:“visc”, re:/^Viscosity/i},
+{key:“tbn”, re:/^TBN/i},
+{key:“pq”, re:/^PQ\s*Reading/i}
+];
+// Les rapports labo ont 4 colonnes de prelevements ; la 4e est la plus recente.
+// Les chiffres des graphiques peuvent contaminer la fin des lignes : on prend donc
+// le 4e nombre apres le libelle si au moins 4 sont presents, sinon le dernier.
+function lastNumToken(line){
+var toks=line.split(” “);
+var nums=[];
+for(var i=0;i<toks.length;i++){
+var t=toks[i].replace(”,”,”.”);
+if(/^[<>]?\d+(.\d+)?$/.test(t)) nums.push(toks[i]);
+}
+if(!nums.length) return null;
+if(nums.length>=4) return nums[3];
+return nums[nums.length-1];
+}
+function parseLabPage(lines){
+var res={comp:null, date:””, hours:””, values:{}};
+var joined=lines.join(” “);
+var compNames=[“Tramming motor Left”,“Tramming motor Right”,“Rotary Head”,“Hydraulics”,“Compressor”,“Gearbox”,“Engine”];
+for(var i=0;i<lines.length;i++){
+if(/Component description/i.test(lines[i])){
+for(var c=0;c<compNames.length;c++){ if(lines[i].indexOf(compNames[c])>=0){ res.comp=compNames[c]; break; } }
+}
+}
+if(!res.comp){
+for(var c2=0;c2<compNames.length;c2++){ if(joined.indexOf(compNames[c2])>=0){ res.comp=compNames[c2]; break; } }
+}
+for(var l=0;l<lines.length;l++){
+var line=lines[l];
+if(/^Sample date/i.test(line)){
+var ds=line.match(/\d{2}-\d{2}-\d{4}/g);
+if(ds&&ds.length){ var pick=(ds.length>=4)?ds[3]:ds[ds.length-1]; var d=pick.split(”-”); res.date=d[2]+”-”+d[1]+”-”+d[0]; }
+}
+if(/^Component HRS/i.test(line)){ var hn=lastNumToken(line); if(hn) res.hours=hn; }
+for(var f=0;f<PDF_FIELDS.length;f++){
+if(res.values[PDF_FIELDS[f].key]===undefined && PDF_FIELDS[f].re.test(line)){
+var v=lastNumToken(line);
+if(v!==null) res.values[PDF_FIELDS[f].key]=v;
+}
+}
+}
+return res;
+}
+function finishPdfParse(pages){
+var mc=getMachine(view.machineId);
+if(!mc){ render(); return; }
+var items=[];
+for(var p=0;p<pages.length;p++){
+var r=parseLabPage(pages[p]);
+var hasVal=false; for(var k in r.values){ hasVal=true; break; }
+if(r.comp&&(r.date||hasVal)) items.push(r);
+}
+if(!items.length){
+alert(“Aucune donnee reconnue dans ce PDF. Verifie que c est bien un rapport du labo (pas une photo scannee).”);
+render(); return;
+}
+pdfParse={machineId:mc.id, items:items};
+view.screen=“pdfReview”;
+render();
+window.scrollTo(0,0);
+}
+
+/* ============ ECRAN DE VERIFICATION AVANT ENREGISTREMENT ============ */
+function renderPdfReview(){
+var mc=getMachine(pdfParse?pdfParse.machineId:null);
+if(!mc||!pdfParse) return renderHome();
+var h=’<button class="back" onclick="cancelPdfImport()">← Annuler</button>’;
+h+=’<div class="page-title">Verification du <span>rapport</span></div>’;
+h+=’<div class="muted" style="margin-bottom:12px;">L application a lu ces valeurs (colonne la plus recente du rapport). Verifie et corrige si besoin, puis enregistre.</div>’;
+for(var i=0;i<pdfParse.items.length;i++){
+var it=pdfParse.items[i];
+var target=findComp(mc,it.comp);
+h+=’<div class="card">’;
+h+=’<div class="card-h"><label style="display:flex;align-items:center;gap:8px;"><input type=“checkbox” style=“width:auto;” id=“pv-on-’+i+’”’+(target?” checked”:””)+’> ‘+esc(it.comp)+’</label>’;
+h+=(target?’<span class="pill pill-ok">composant trouve</span>’:’<span class="pill pill-na">absent de la machine</span>’)+’</div>’;
+if(!target) h+=’<div class="muted" style="margin-bottom:8px;">Ce composant n existe pas sur ‘+esc(mc.name)+’. Coche pour le creer automatiquement.</div>’;
+h+=’<div class="row2"><div class="field"><label>Date</label><input type="date" id="pv-date-'+i+'" value="'+esc(it.date)+'"></div>’;
+h+=’<div class="field"><label>Heures</label><input type="text" inputmode="numeric" id="pv-hours-'+i+'" value="'+esc(it.hours)+'"></div></div>’;
+h+=’<div class="row2">’;
+for(var e=0;e<ELEMENTS.length;e++){
+var key=ELEMENTS[e].key;
+var val=it.values[key]!==undefined?it.values[key]:””;
+h+=’<div class="field"><label>’+esc(ELEMENTS[e].label)+’</label><input type="text" inputmode="decimal" id="pv-'+key+'-'+i+'" value="'+esc(val)+'"></div>’;
+}
+h+=’</div></div>’;
+}
+h+=’<button class="btn btn-green" onclick="applyPdfImport()">Enregistrer les prelevements</button>’;
+h+=’<button class="btn btn-ghost" onclick="cancelPdfImport()">Annuler</button>’;
+return h;
+}
+function findComp(mc,name){
+if(!mc.components) return null;
+for(var i=0;i<mc.components.length;i++){
+var n=mc.components[i].name;
+if(n===name||n.indexOf(name)>=0||name.indexOf(n)>=0) return mc.components[i];
+}
+return null;
+}
+function cancelPdfImport(){
+var mid=pdfParse?pdfParse.machineId:null;
+pdfParse=null;
+if(mid) go(“machine”, mid, view.compIdx); else go(“home”);
+}
+function applyPdfImport(){
+var mc=getMachine(pdfParse?pdfParse.machineId:null);
+if(!mc||!pdfParse) return;
+var added=0, updated=0;
+for(var i=0;i<pdfParse.items.length;i++){
+var on=document.getElementById(“pv-on-”+i);
+if(!on||!on.checked) continue;
+var it=pdfParse.items[i];
+var date=document.getElementById(“pv-date-”+i).value;
+if(!date) continue;
+var s={date:date, hours:document.getElementById(“pv-hours-”+i).value||””};
+var any=false;
+for(var e=0;e<ELEMENTS.length;e++){
+var key=ELEMENTS[e].key;
+var v=document.getElementById(“pv-”+key+”-”+i).value;
+s[key]=v;
+if(v!==””) any=true;
+}
+if(!any) continue;
+var comp=findComp(mc,it.comp);
+if(!comp){
+var oil=””;
+for(var d=0;d<DEFAULT_COMPONENTS.length;d++){ if(DEFAULT_COMPONENTS[d].name===it.comp){ oil=DEFAULT_COMPONENTS[d].oil; break; } }
+comp={name:it.comp, oil:oil, samples:[]};
+mc.components.push(comp);
+}
+if(!comp.samples) comp.samples=[];
+// si un prelevement existe deja a la meme date, on le remplace
+var replaced=false;
+for(var x=0;x<comp.samples.length;x++){
+if(comp.samples[x].date===date){ comp.samples[x]=s; replaced=true; break; }
+}
+if(replaced) updated++; else { comp.samples.push(s); added++; }
+comp.samples.sort(function(a,b){ return (a.date||””).localeCompare(b.date||””); });
+}
+saveDB();
+pdfParse=null;
+alert(added+” prelevement(s) ajoute(s)”+(updated?”, “+updated+” mis a jour”:””)+”.”);
+go(“machine”, mc.id, 0);
 }
 
 /* =================== SERVICE WORKER (hors-ligne) =================== */
