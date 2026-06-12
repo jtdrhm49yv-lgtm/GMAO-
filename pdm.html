@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<!-- PDM VERSION 13 AUTO-REPARANTE -->
+<!-- PDM VERSION 15 AUTO-REPARANTE -->
 
 <html lang="en" translate="no" class="notranslate">
 <head>
@@ -150,6 +150,7 @@ var ELEMENTS = [
   {key:"water", label:"Eau", unit:"ppm", type:"contam"},
   {key:"visc", label:"Viscosite 40C", unit:"mm2/s", type:"oil"},
   {key:"tbn", label:"TBN", unit:"mgKOH/g", type:"oil"},
+  {key:"sulf", label:"Sulfation", unit:"abs/0.1mm", type:"oil"},
   {key:"pq", label:"PQ Reading", unit:"", type:"wear"}
 ];
 
@@ -177,6 +178,7 @@ var DEFAULT_THRESHOLDS = {
   si:{warn:20, crit:40},
   water:{warn:500, crit:1000},
   pq:{warn:50, crit:100},
+  sulf:{warn:24, crit:30},
   visc:{lowWarn:0, lowCrit:0, highWarn:0, highCrit:0}, // 0 = pas de seuil fixe (on regarde la tendance)
   tbn:{lowWarn:3, lowCrit:1} // TBN: en dessous = mauvais
 };
@@ -591,6 +593,7 @@ h+=sourceLine(”🌡 Parametres machine”, par);
 h+=sourceLine(”🔨 Historique des pannes”, his);
 h+=’<div class="muted" style="margin-top:10px;">Regle : 1 source en alerte = surveiller (orange). 2 sources ou plus = intervention (rouge).</div>’;
 h+=’</div>’;
+h+=renderForecast(mc);
 // saisie rapide d une panne pour l historique
 h+=’<div class="card"><div class="card-h">Historique des pannes (30 derniers jours)</div>’;
 h+=’<div class="muted" style="margin-bottom:10px;">Ajoute les pannes recentes de cette machine. Plus il y en a, plus le risque monte.</div>’;
@@ -954,24 +957,28 @@ var PDF_FIELDS=[
 {key:“water”, re:/^Water.*ppm/i},
 {key:“visc”, re:/^Viscosity/i},
 {key:“tbn”, re:/^TBN/i},
-{key:“pq”, re:/^PQ\s*Reading/i}
+{key:“pq”, re:/^PQ\s*Reading/i},
+{key:“sulf”, re:/^Sulfation/i}
 ];
-// Les rapports labo ont 4 colonnes de prelevements ; la 4e est la plus recente.
-// Les chiffres des graphiques peuvent contaminer la fin des lignes : on prend donc
-// le 4e nombre apres le libelle si au moins 4 sont presents, sinon le dernier.
-function lastNumToken(line){
+// Les rapports labo ont 4 colonnes de prelevements (la 4e = la plus recente).
+// Les chiffres des graphiques contaminent parfois la fin des lignes :
+// on garde donc les 4 premiers nombres apres le libelle.
+function numTokens(line){
 var toks=line.split(” “);
 var nums=[];
 for(var i=0;i<toks.length;i++){
 var t=toks[i].replace(”,”,”.”);
 if(/^[<>]?\d+(.\d+)?$/.test(t)) nums.push(toks[i]);
 }
-if(!nums.length) return null;
-if(nums.length>=4) return nums[3];
-return nums[nums.length-1];
+if(nums.length>4) nums=nums.slice(0,4);
+return nums;
+}
+function lastNumToken(line){
+var nums=numTokens(line);
+return nums.length?nums[nums.length-1]:null;
 }
 function parseLabPage(lines){
-var res={comp:null, date:””, hours:””, values:{}};
+var res={comp:null, date:””, hours:””, values:{}, dates:[], hoursArr:[], valuesArr:{}};
 var joined=lines.join(” “);
 var compNames=[“Tramming motor Left”,“Tramming motor Right”,“Rotary Head”,“Hydraulics”,“Compressor”,“Gearbox”,“Engine”];
 for(var i=0;i<lines.length;i++){
@@ -984,15 +991,23 @@ for(var c2=0;c2<compNames.length;c2++){ if(joined.indexOf(compNames[c2])>=0){ re
 }
 for(var l=0;l<lines.length;l++){
 var line=lines[l];
-if(/^Sample date/i.test(line)){
-var ds=line.match(/\d{2}-\d{2}-\d{4}/g);
-if(ds&&ds.length){ var pick=(ds.length>=4)?ds[3]:ds[ds.length-1]; var d=pick.split(”-”); res.date=d[2]+”-”+d[1]+”-”+d[0]; }
+if(/^Sample date/i.test(line)&&!res.dates.length){
+var ds=line.match(/\d{2}-\d{2}-\d{4}/g)||[];
+if(ds.length>4) ds=ds.slice(0,4);
+for(var di=0;di<ds.length;di++){ var d=ds[di].split(”-”); res.dates.push(d[2]+”-”+d[1]+”-”+d[0]); }
+if(res.dates.length) res.date=res.dates[res.dates.length-1];
 }
-if(/^Component HRS/i.test(line)){ var hn=lastNumToken(line); if(hn) res.hours=hn; }
+if(/^Component HRS/i.test(line)&&!res.hoursArr.length){
+res.hoursArr=numTokens(line);
+if(res.hoursArr.length) res.hours=res.hoursArr[res.hoursArr.length-1];
+}
 for(var f=0;f<PDF_FIELDS.length;f++){
 if(res.values[PDF_FIELDS[f].key]===undefined && PDF_FIELDS[f].re.test(line)){
-var v=lastNumToken(line);
-if(v!==null) res.values[PDF_FIELDS[f].key]=v;
+var nums=numTokens(line);
+if(nums.length){
+res.valuesArr[PDF_FIELDS[f].key]=nums;
+res.values[PDF_FIELDS[f].key]=nums[nums.length-1];
+}
 }
 }
 }
@@ -1024,6 +1039,7 @@ if(!mc||!pdfParse) return renderHome();
 var h=’<button class="back" onclick="cancelPdfImport()">← Annuler</button>’;
 h+=’<div class="page-title">Verification du <span>rapport</span></div>’;
 h+=’<div class="muted" style="margin-bottom:12px;">L application a lu ces valeurs (colonne la plus recente du rapport). Verifie et corrige si besoin, puis enregistre.</div>’;
+h+=’<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;color:var(--text2);"><input type="checkbox" id="pv-hist" checked style="width:auto;"> Importer aussi les prelevements precedents du rapport (historique pour les courbes)</label>’;
 for(var i=0;i<pdfParse.items.length;i++){
 var it=pdfParse.items[i];
 var target=findComp(mc,it.comp);
@@ -1058,9 +1074,18 @@ var mid=pdfParse?pdfParse.machineId:null;
 pdfParse=null;
 if(mid) go(“machine”, mid, view.compIdx); else go(“home”);
 }
+function upsertSample(comp,s){
+for(var x=0;x<comp.samples.length;x++){
+if(comp.samples[x].date===s.date){ comp.samples[x]=s; return false; }
+}
+comp.samples.push(s);
+return true;
+}
 function applyPdfImport(){
 var mc=getMachine(pdfParse?pdfParse.machineId:null);
 if(!mc||!pdfParse) return;
+var histEl=document.getElementById(“pv-hist”);
+var withHist=histEl?histEl.checked:false;
 var added=0, updated=0;
 for(var i=0;i<pdfParse.items.length;i++){
 var on=document.getElementById(“pv-on-”+i);
@@ -1068,15 +1093,6 @@ if(!on||!on.checked) continue;
 var it=pdfParse.items[i];
 var date=document.getElementById(“pv-date-”+i).value;
 if(!date) continue;
-var s={date:date, hours:document.getElementById(“pv-hours-”+i).value||””};
-var any=false;
-for(var e=0;e<ELEMENTS.length;e++){
-var key=ELEMENTS[e].key;
-var v=document.getElementById(“pv-”+key+”-”+i).value;
-s[key]=v;
-if(v!==””) any=true;
-}
-if(!any) continue;
 var comp=findComp(mc,it.comp);
 if(!comp){
 var oil=””;
@@ -1085,18 +1101,145 @@ comp={name:it.comp, oil:oil, samples:[]};
 mc.components.push(comp);
 }
 if(!comp.samples) comp.samples=[];
-// si un prelevement existe deja a la meme date, on le remplace
-var replaced=false;
-for(var x=0;x<comp.samples.length;x++){
-if(comp.samples[x].date===date){ comp.samples[x]=s; replaced=true; break; }
+var n=it.dates?it.dates.length:0;
+// colonnes precedentes du rapport (historique)
+if(withHist&&n>1){
+for(var ci=0;ci<n-1;ci++){
+var s0={date:it.dates[ci], hours:(it.hoursArr&&it.hoursArr.length===n)?it.hoursArr[ci]:””};
+var any0=false;
+for(var e0=0;e0<ELEMENTS.length;e0++){
+var k0=ELEMENTS[e0].key;
+var arr=it.valuesArr?it.valuesArr[k0]:null;
+var v0=(arr&&arr.length===n)?arr[ci]:””;
+s0[k0]=v0;
+if(v0!==””) any0=true;
 }
-if(replaced) updated++; else { comp.samples.push(s); added++; }
+if(!any0||!s0.date) continue;
+if(upsertSample(comp,s0)) added++; else updated++;
+}
+}
+// colonne la plus recente (valeurs verifiees/corrigees par l utilisateur)
+var s={date:date, hours:document.getElementById(“pv-hours-”+i).value||””};
+var any=false;
+for(var e=0;e<ELEMENTS.length;e++){
+var key=ELEMENTS[e].key;
+var v=document.getElementById(“pv-”+key+”-”+i).value;
+s[key]=v;
+if(v!==””) any=true;
+}
+if(any){ if(upsertSample(comp,s)) added++; else updated++; }
 comp.samples.sort(function(a,b){ return (a.date||””).localeCompare(b.date||””); });
 }
 saveDB();
 pdfParse=null;
 alert(added+” prelevement(s) ajoute(s)”+(updated?”, “+updated+” mis a jour”:””)+”.”);
 go(“machine”, mc.id, 0);
+}
+
+/* =================== PREVISION DE PANNES (projection de tendance) =================== */
+// Regression lineaire valeur = a*heures + b (moindres carres)
+function linFit(pts){
+var n=pts.length; if(n<2) return null;
+var sh=0,sv=0,shh=0,shv=0;
+for(var i=0;i<n;i++){ sh+=pts[i].h; sv+=pts[i].v; shh+=pts[i].h*pts[i].h; shv+=pts[i].h*pts[i].v; }
+var den=n*shh-sh*sh;
+if(!den) return null;
+var a=(n*shv-sh*sv)/den;
+return {a:a, b:(sv-a*sh)/n};
+}
+// heures moyennes par jour (pour convertir des heures restantes en date)
+function hoursPerDay(samples){
+var first=null,last=null;
+for(var i=0;i<samples.length;i++){
+var h=num(samples[i].hours);
+if(isNaN(h)||!samples[i].date) continue;
+var t=new Date(samples[i].date+“T12:00:00”).getTime();
+if(isNaN(t)) continue;
+if(!first) first={h:h,t:t};
+last={h:h,t:t};
+}
+if(!first||!last||last.t<=first.t||last.h<=first.h) return null;
+return (last.h-first.h)/((last.t-first.t)/86400000);
+}
+// previsions pour un composant : quand chaque element atteindra son seuil
+function forecastComponent(comp){
+var out=[];
+if(!comp.samples||comp.samples.length<2) return out;
+var hpd=hoursPerDay(comp.samples);
+for(var e=0;e<ELEMENTS.length;e++){
+var el=ELEMENTS[e]; var key=el.key;
+if(key===“visc”) continue;
+var th=DEFAULT_THRESHOLDS[key]; if(!th) continue;
+var pts=[];
+for(var i=0;i<comp.samples.length;i++){
+var v=num(comp.samples[i][key]); var h=num(comp.samples[i].hours);
+if(isNaN(v)||isNaN(h)) continue;
+pts.push({h:h,v:v});
+}
+if(pts.length<2) continue;
+if(pts.length>4) pts=pts.slice(pts.length-4);
+var fit=linFit(pts); if(!fit||!fit.a) continue;
+var lastV=pts[pts.length-1].v;
+var targets=[];
+if(key===“tbn”){
+if(fit.a<0){
+if(th.lowWarn!=null&&lastV>th.lowWarn) targets.push({lvl:“warn”,val:th.lowWarn});
+if(th.lowCrit!=null&&lastV>th.lowCrit) targets.push({lvl:“crit”,val:th.lowCrit});
+}
+} else {
+if(fit.a>0){
+if(th.warn&&lastV<th.warn) targets.push({lvl:“warn”,val:th.warn});
+if(th.crit&&lastV<th.crit) targets.push({lvl:“crit”,val:th.crit});
+}
+}
+for(var t2=0;t2<targets.length;t2++){
+var dh=(targets[t2].val-lastV)/fit.a;
+if(!(dh>0)||dh>8000) continue;
+var item={comp:comp.name, el:el.label, lvl:targets[t2].lvl, hours:Math.round(dh)};
+if(hpd){
+var dt=new Date(Date.now()+(dh/hpd)*86400000);
+item.date=dt.toISOString().slice(0,10);
+}
+out.push(item);
+}
+var lastS=comp.samples[comp.samples.length-1];
+var prevS=comp.samples.length>1?comp.samples[comp.samples.length-2]:null;
+if(elementLevel(key,lastS,prevS)===“crit”){
+out.push({comp:comp.name, el:el.label, lvl:“now”, hours:0});
+}
+}
+return out;
+}
+function renderForecast(mc){
+var all=[];
+for(var i=0;i<mc.components.length;i++){
+var f=forecastComponent(mc.components[i]);
+for(var j=0;j<f.length;j++) all.push(f[j]);
+}
+var h=’<div class="card"><div class="card-h">🔮 Prevision de pannes</div>’;
+if(!all.length){
+h+=’<div class="muted">Pas encore assez de donnees pour prevoir. Il faut au moins 2 prelevements avec les HEURES machine, et une tendance qui monte vers un seuil.</div></div>’;
+return h;
+}
+all.sort(function(a,b){ return a.hours-b.hours; });
+h+=’<div class="muted" style="margin-bottom:10px;">Au rythme d usure actuel, voici quand chaque indicateur atteindra son seuil. Projections basees sur la tendance, a confirmer par inspection.</div>’;
+var max=Math.min(all.length,8);
+for(var k=0;k<max;k++){
+var it=all[k];
+var pill, txt;
+if(it.lvl===“now”){
+pill=’<span class="pill pill-crit">MAINTENANT</span>’;
+txt=“deja en zone critique”;
+} else {
+var urg=it.hours<=250?“pill-crit”:(it.hours<=750?“pill-warn”:“pill-ok”);
+pill=’<span class="pill '+urg+'">~’+it.hours+’ h</span>’;
+txt=“seuil “+(it.lvl===“crit”?“ROUGE”:“orange”)+” dans environ “+it.hours+” h”+(it.date?” (vers le “+esc(it.date)+”)”:””);
+}
+h+=’<div class="sample-row"><div style="flex:1;"><div style="font-weight:600;">’+esc(it.comp)+’ · ‘+esc(it.el)+’</div><div class="muted">’+txt+’</div></div>’+pill+’</div>’;
+}
+if(all.length>max) h+=’<div class="muted">+ ‘+(all.length-max)+’ autres previsions plus lointaines</div>’;
+h+=’</div>’;
+return h;
 }
 
 /* =================== SAUVEGARDE / RESTAURATION =================== */
