@@ -75,6 +75,17 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,san
 if("serviceWorker" in navigator){
   window.addEventListener("load",function(){ navigator.serviceWorker.register("./service-worker.js").catch(function(){}); });
 }
+// Ceinture de securite : a chaque ouverture avec reseau, on re-remplit le cache
+// (utile si la premiere installation a ete coupee par une perte de reseau)
+if("caches" in window){
+  window.addEventListener("load",function(){
+    setTimeout(function(){
+      caches.open("gmao-cache-v5").then(function(cache){
+        return cache.addAll(["./","./accueil.html","./index.html","./pdm.html","./manifest.json"]);
+      }).catch(function(){});
+    },1500);
+  });
+}
 </script>
 
 </body>
