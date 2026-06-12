@@ -2,7 +2,7 @@
 // Strategie “cache d’abord” : l’app s’ouvre instantanement depuis le cache,
 // meme sans reseau. Le reseau sert seulement a mettre a jour en arriere-plan.
 // Changer le numero de version force le rafraichissement chez tout le monde.
-var CACHE_NAME = “gmao-cache-v3”;
+var CACHE_NAME = “gmao-cache-v4”;
 
 // Fichiers essentiels (l’app doit pouvoir s’ouvrir entierement avec ceux-la)
 var CORE = [
@@ -14,7 +14,9 @@ var CORE = [
 ];
 // Fichier externe (jsPDF) - mis en cache si possible, mais non bloquant
 var EXTRA = [
-“https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js”
+“https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js”,
+“https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js”,
+“https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js”
 ];
 
 // Installation : on met en cache les fichiers essentiels (de maniere fiable)
