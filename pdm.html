@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<!-- PDM VERSION 12 AUTO-REPARANTE -->
+<!-- PDM VERSION 13 AUTO-REPARANTE -->
 
 <html lang="en" translate="no" class="notranslate">
 <head>
@@ -230,6 +230,7 @@ function render(){
 function renderHome(){
   var h='<div class="page-title">Mes <span>machines</span></div>';
   h+='<button class="btn btn-amber" onclick="go(\u0027addMachine\u0027)">+ Ajouter une machine</button>';
+  h+=renderBackupButtons();
   if(!DB.machines.length){
     h+='<div class="empty">Aucune machine pour le moment.<br>Ajoute ta premiere foreuse pour commencer le suivi predictif.</div>';
     return h;
@@ -1096,6 +1097,50 @@ saveDB();
 pdfParse=null;
 alert(added+” prelevement(s) ajoute(s)”+(updated?”, “+updated+” mis a jour”:””)+”.”);
 go(“machine”, mc.id, 0);
+}
+
+/* =================== SAUVEGARDE / RESTAURATION =================== */
+function renderBackupButtons(){
+var h=’<div style="display:flex;gap:10px;margin-bottom:4px;">’;
+h+=’<button class="btn btn-ghost" style="flex:1;margin-bottom:6px;" onclick="exportBackup()">💾 Sauvegarder</button>’;
+h+=’<label class="btn btn-ghost" style="flex:1;margin-bottom:6px;text-align:center;cursor:pointer;">📂 Restaurer<input type="file" accept=".json,application/json" style="display:none;" onchange="importBackup(event)"></label>’;
+h+=’</div>’;
+return h;
+}
+function exportBackup(){
+try{
+var data=JSON.stringify(DB);
+var today=new Date().toISOString().slice(0,10);
+var blob=new Blob([data],{type:“application/json”});
+var url=URL.createObjectURL(blob);
+var a=document.createElement(“a”);
+a.href=url;
+a.download=“gmao-pdm-sauvegarde-”+today+”.json”;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+setTimeout(function(){ URL.revokeObjectURL(url); },2000);
+}catch(e){ alert(“Echec de la sauvegarde : “+e.message); }
+}
+function importBackup(ev){
+var file=ev.target.files&&ev.target.files[0];
+ev.target.value=””;
+if(!file) return;
+var reader=new FileReader();
+reader.onload=function(e){
+try{
+var d=JSON.parse(e.target.result);
+if(!d||!d.machines||!Array.isArray(d.machines)){ alert(“Ce fichier ne ressemble pas a une sauvegarde GMAO PdM.”); return; }
+var n=d.machines.length;
+if(!confirm(“Restaurer cette sauvegarde (”+n+” machine(s)) ? Les donnees actuelles seront REMPLACEES.”)) return;
+DB=d;
+saveDB();
+render();
+alert(“Sauvegarde restauree : “+n+” machine(s).”);
+}catch(err){ alert(“Fichier illisible : “+err.message); }
+};
+reader.onerror=function(){ alert(“Impossible de lire ce fichier.”); };
+reader.readAsText(file);
 }
 
 /* =================== SERVICE WORKER (hors-ligne) =================== */
