@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<!-- PDM VERSION 15 AUTO-REPARANTE -->
+<!-- PDM VERSION 17 AUTO-REPARANTE -->
 
 <html lang="en" translate="no" class="notranslate">
 <head>
@@ -949,16 +949,16 @@ return lines;
 
 // champs reconnus dans les rapports labo
 var PDF_FIELDS=[
-{key:“fe”, re:/^Iron\s*(Fe)/i},
-{key:“cr”, re:/^Chromium/i},
-{key:“cu”, re:/^Copper/i},
-{key:“al”, re:/^Alumini?um/i},
-{key:“si”, re:/^Silicon\s*(Si)/i},
-{key:“water”, re:/^Water.*ppm/i},
-{key:“visc”, re:/^Viscosity/i},
-{key:“tbn”, re:/^TBN/i},
-{key:“pq”, re:/^PQ\s*Reading/i},
-{key:“sulf”, re:/^Sulfation/i}
+{key:“fe”, re:/(^|\s)Iron\s*(Fe)/i},
+{key:“cr”, re:/(^|\s)Chromium/i},
+{key:“cu”, re:/(^|\s)Copper/i},
+{key:“al”, re:/(^|\s)Alumini?um/i},
+{key:“si”, re:/(^|\s)Silic[oi]n\s*(Si)/i},
+{key:“water”, re:/(^|\s)Water.*ppm/i},
+{key:“visc”, re:/(^|\s)Viscosity/i},
+{key:“tbn”, re:/(^|\s)T[AB]N/i},
+{key:“pq”, re:/(^|\s)PQ\s*Reading/i},
+{key:“sulf”, re:/(^|\s)Sulfation/i}
 ];
 // Les rapports labo ont 4 colonnes de prelevements (la 4e = la plus recente).
 // Les chiffres des graphiques contaminent parfois la fin des lignes :
@@ -989,7 +989,11 @@ for(var c=0;c<compNames.length;c++){ if(lines[i].indexOf(compNames[c])>=0){ res.
 if(!res.comp){
 for(var c2=0;c2<compNames.length;c2++){ if(joined.indexOf(compNames[c2])>=0){ res.comp=compNames[c2]; break; } }
 }
-for(var l=0;l<lines.length;l++){
+var stop=lines.length;
+for(var z=0;z<lines.length;z++){
+if(/Normalized\s*ppm|Rate\s*of\s*Change/i.test(lines[z])){ stop=z; break; }
+}
+for(var l=0;l<stop;l++){
 var line=lines[l];
 if(/^Sample date/i.test(line)&&!res.dates.length){
 var ds=line.match(/\d{2}-\d{2}-\d{4}/g)||[];
