@@ -68,7 +68,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,san
   </a>
 </div>
 
-<div class="foot">Endeavour Mining &mdash; Drilling Maintenance</div>
+<div class="foot" id="offline-status">Endeavour Mining &mdash; Drilling Maintenance</div>
 
 <script>
 "use strict";
@@ -82,9 +82,21 @@ if("caches" in window){
     setTimeout(function(){
       caches.open("gmao-cache-v5").then(function(cache){
         return cache.addAll(["./","./accueil.html","./index.html","./pdm.html","./manifest.json"]);
-      }).catch(function(){});
+      }).then(function(){ checkOfflineReady(); }).catch(function(){ checkOfflineReady(); });
     },1500);
   });
+}
+function checkOfflineReady(){
+  if(!("caches" in window)) return;
+  caches.open("gmao-cache-v5").then(function(cache){
+    return Promise.all([cache.match("./accueil.html"),cache.match("./index.html"),cache.match("./pdm.html")]);
+  }).then(function(r){
+    var ok=r[0]&&r[1]&&r[2];
+    var el=document.getElementById("offline-status");
+    if(!el) return;
+    if(ok){ el.innerHTML="&#9989; Pret pour le hors-ligne"; el.style.color="#22c97a"; }
+    else { el.innerHTML="&#9888; Hors-ligne pas encore pret - gardez du reseau quelques secondes"; el.style.color="#f0a832"; }
+  }).catch(function(){});
 }
 </script>
 
