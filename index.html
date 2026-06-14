@@ -159,14 +159,22 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
   <!-- HISTORY -->
 
   <div class="view" id="v-hist">
-    <div class="page-title">Historique</div>
+    <div class="page-title">Catalogue <span>pieces</span></div>
+    <div class="field">
+      <input id="part-search" oninput="renderParts()" placeholder="Rechercher une piece (nom, part number...)" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;">
+    </div>
     <div class="field"><label>Filtrer par machine</label>
-      <select id="hist-filter" onchange="renderHist()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;">
+      <select id="part-filter" onchange="renderParts()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;">
         <option value="">Toutes les machines</option>
       </select>
     </div>
-    <div class="card"><div class="card-body" id="hist-body"><div class="empty"><div class="ei">&#128193;</div>Aucune donnee enregistree</div></div></div>
-    <button class="btn btn-red" onclick="clearHist()">Vider l historique</button>
+    <div class="field"><label>Filtrer par systeme</label>
+      <select id="part-sysfilter" onchange="renderParts()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:12px;font-size:16px;color:var(--text);width:100%;min-height:46px;">
+        <option value="">Tous les systemes</option>
+      </select>
+    </div>
+    <button class="btn btn-amber" onclick="openPartForm()">+ Ajouter une piece</button>
+    <div class="card"><div class="card-body" id="parts-body"><div class="empty"><div class="ei">&#128230;</div>Aucune piece enregistree</div></div></div>
   </div>
 
   <!-- INFO -->
@@ -290,7 +298,7 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 <div class="bottom-nav">
   <button class="bn active" id="bn-panne" onclick="nav('panne')"><span class="bn-ic">&#128221;</span><span class="bn-lb">Panne</span></button>
   <button class="bn" id="bn-daily" onclick="nav('daily')"><span class="bn-ic">&#128203;</span><span class="bn-lb">Daily</span></button>
-  <button class="bn" id="bn-hist" onclick="nav('hist')"><span class="bn-ic">&#128451;</span><span class="bn-lb">Historique</span></button>
+  <button class="bn" id="bn-hist" onclick="nav('hist')"><span class="bn-ic">&#128230;</span><span class="bn-lb">Pieces</span></button>
   <button class="bn" id="bn-mds" onclick="nav('mds')"><span class="bn-ic">&#9989;</span><span class="bn-lb">MDS</span></button>
   <button class="bn" id="bn-oil" onclick="nav('oil')"><span class="bn-ic">&#128738;</span><span class="bn-lb">Huile</span></button>
   <button class="bn" id="bn-info" onclick="nav('info')"><span class="bn-ic">&#128228;</span><span class="bn-lb">Envoyer</span></button>
@@ -475,7 +483,7 @@ function importData(input){
       if(!Array.isArray(imported)) throw new Error("format");
       if(!confirm("Importer "+imported.length+" rapport(s) ? Cela remplacera ton historique actuel.")){ input.value=""; return; }
       DB=imported; saveDB();
-      if(document.getElementById("v-hist").classList.contains("active")) renderHist();
+      if(document.getElementById("v-hist").classList.contains("active")) renderParts();
       toast("Sauvegarde importee : "+imported.length+" rapport(s)");
     }catch(err){ toast("Fichier invalide"); }
     input.value="";
@@ -492,7 +500,7 @@ function nav(v){
   var bns=document.querySelectorAll(".bn");
   for(var j=0;j<bns.length;j++) bns[j].classList.remove("active");
   document.getElementById("bn-"+v).classList.add("active");
-  if(v==="hist") renderHist();
+  if(v==="hist") renderParts();
   if(v==="mds") initMDS();
   if(v==="oil") initOil();
   if(v==="wo") initWO();
@@ -1747,6 +1755,147 @@ function fmtDur(min){
   if(h>0) return h+"h"+(m>0?(m<10?"0"+m:m):"00");
   return m+"min";
 }
+/* =================== CATALOGUE DE PIECES =================== */
+var PARTS=[];
+try{ PARTS=JSON.parse(localStorage.getItem("gmao_parts")||"[]"); if(!Array.isArray(PARTS)) PARTS=[]; }catch(e){ PARTS=[]; }
+function savePartsDB(){ try{ localStorage.setItem("gmao_parts", JSON.stringify(PARTS)); }catch(e){ toast("Memoire pleine - reduis le nombre de photos"); } }
+var PART_MACHINES=["D25KS","D25KX","DPI1500","Thor-6BT","Thor-NTA","Thor-QSZ13"];
+var PART_SYSTEMS=["Moteur","Hydraulique","Compresseur","Mat","Transmission","Rotation","Circuit air","Circuit eau","Electrique","Chassis","Cabine","Autre"];
+function partMachines(){
+  var set={};
+  for(var i=0;i<PART_MACHINES.length;i++) set[PART_MACHINES[i]]=true;
+  for(var p=0;p<PARTS.length;p++){ if(PARTS[p].machine) set[PARTS[p].machine]=true; }
+  return Object.keys(set);
+}
+function renderParts(){
+  // remplir le filtre une seule fois
+  var sel=document.getElementById("part-filter");
+  if(sel && sel.options.length<=1){
+    var ms=partMachines();
+    for(var i=0;i<ms.length;i++){ var o=document.createElement("option"); o.value=ms[i]; o.textContent=ms[i]; sel.appendChild(o); }
+  }
+  var ssel=document.getElementById("part-sysfilter");
+  if(ssel && ssel.options.length<=1){
+    for(var s=0;s<PART_SYSTEMS.length;s++){ var so=document.createElement("option"); so.value=PART_SYSTEMS[s]; so.textContent=PART_SYSTEMS[s]; ssel.appendChild(so); }
+  }
+  var q=(document.getElementById("part-search")||{}).value||"";
+  q=q.toLowerCase().trim();
+  var f=(document.getElementById("part-filter")||{}).value||"";
+  var fsys=(document.getElementById("part-sysfilter")||{}).value||"";
+  var b=document.getElementById("parts-body");
+  if(!b) return;
+  var list=PARTS.filter(function(p){
+    if(f && p.machine!==f) return false;
+    if(fsys && p.system!==fsys) return false;
+    if(!q) return true;
+    var hay=((p.name||"")+" "+(p.pn||"")+" "+(p.stock||"")+" "+(p.machine||"")+" "+(p.system||"")).toLowerCase();
+    return hay.indexOf(q)>=0;
+  });
+  if(!list.length){ b.innerHTML='<div class="empty"><div class="ei">&#128230;</div>'+(PARTS.length?"Aucune piece trouvee":"Aucune piece enregistree")+'</div>'; return; }
+  // grouper par systeme
+  var groups={};
+  for(var g=0;g<list.length;g++){ var sy=list[g].system||"Autre"; if(!groups[sy]) groups[sy]=[]; groups[sy].push(list[g]); }
+  var sysOrder=PART_SYSTEMS.concat(["Autre"]);
+  var seen={};
+  var ordered=[];
+  for(var k=0;k<sysOrder.length;k++){ if(groups[sysOrder[k]] && !seen[sysOrder[k]]){ ordered.push(sysOrder[k]); seen[sysOrder[k]]=true; } }
+  for(var gk in groups){ if(!seen[gk]){ ordered.push(gk); seen[gk]=true; } }
+  var h="";
+  for(var oi=0;oi<ordered.length;oi++){
+    var syName=ordered[oi];
+    var arr=groups[syName];
+    arr.sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
+    h+='<div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amber);margin:14px 0 8px;border-bottom:1px solid var(--border);padding-bottom:4px;">'+escP(syName)+' ('+arr.length+')</div>';
+    for(var i=0;i<arr.length;i++){
+      var p=arr[i];
+      h+='<div style="display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:var(--surface2);">';
+      if(p.photo){ h+='<img src="'+p.photo+'" onclick="viewPartPhoto(\''+p.id+'\')" style="width:60px;height:60px;object-fit:cover;border-radius:8px;flex:0 0 auto;cursor:pointer;">'; }
+      else { h+='<div style="width:60px;height:60px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:26px;flex:0 0 auto;">&#128230;</div>'; }
+      h+='<div style="flex:1;min-width:0;">';
+      h+='<div style="font-weight:700;font-size:15px;">'+escP(p.name||"-")+'</div>';
+      h+='<div style="font-size:13px;color:var(--amber);font-weight:600;">PN: '+escP(p.pn||"-")+'</div>';
+      h+='<div style="font-size:12px;color:var(--text2);">Stock: '+escP(p.stock||"-")+(p.machine?' &middot; '+escP(p.machine):"")+'</div>';
+      h+='</div>';
+      h+='<div style="display:flex;flex-direction:column;gap:6px;flex:0 0 auto;">';
+      h+='<button onclick="editPart(\''+p.id+'\')" style="background:none;border:1px solid var(--border2);color:var(--text2);border-radius:7px;padding:6px 8px;font-size:12px;">Modifier</button>';
+      h+='<button onclick="delPart(\''+p.id+'\')" style="background:none;border:none;color:var(--red);font-size:18px;">&#10005;</button>';
+      h+='</div></div>';
+    }
+  }
+  b.innerHTML=h;
+}
+function escP(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function openPartForm(existing){
+  var p=existing||{};
+  var ms=partMachines();
+  var opts='<option value="">-- Machine --</option>';
+  for(var i=0;i<ms.length;i++){ opts+='<option value="'+ms[i]+'"'+(p.machine===ms[i]?" selected":"")+'>'+ms[i]+'</option>'; }
+  var sopts='<option value="">-- Systeme --</option>';
+  for(var s=0;s<PART_SYSTEMS.length;s++){ sopts+='<option value="'+PART_SYSTEMS[s]+'"'+(p.system===PART_SYSTEMS[s]?" selected":"")+'>'+PART_SYSTEMS[s]+'</option>'; }
+  var ov=document.createElement("div");
+  ov.id="part-form-ov";
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:flex-end;justify-content:center;";
+  ov.innerHTML='<div style="background:var(--surface);border-top-left-radius:18px;border-top-right-radius:18px;padding:18px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;">'+
+    '<div style="font-size:17px;font-weight:700;margin-bottom:14px;">'+(existing?"Modifier la piece":"Nouvelle piece")+'</div>'+
+    '<div class="field"><label>Nom de la piece</label><input id="pf-name" value="'+escP(p.name||"")+'" placeholder="ex: Filtre a huile"></div>'+
+    '<div class="field"><label>Part Number</label><input id="pf-pn" value="'+escP(p.pn||"")+'" placeholder="ex: LF9009"></div>'+
+    '<div class="field"><label>Stock Code</label><input id="pf-stock" value="'+escP(p.stock||"")+'" placeholder="ex: 10025478"></div>'+
+    '<div class="field"><label>Machine</label><select id="pf-machine">'+opts+'</select></div>'+
+    '<div class="field"><label>Systeme</label><select id="pf-system">'+sopts+'</select></div>'+
+    '<div class="field"><label>Photo de la piece</label><input type="file" accept="image/*" id="pf-photo" onchange="previewPartPhoto(event)"></div>'+
+    '<div id="pf-preview" style="margin-bottom:12px;">'+(p.photo?'<img src="'+p.photo+'" style="width:100px;height:100px;object-fit:cover;border-radius:8px;">':"")+'</div>'+
+    '<button class="btn btn-green" onclick="savePart(\''+(p.id||"")+'\')">Enregistrer</button>'+
+    '<button class="btn btn-ghost" onclick="closePartForm()">Annuler</button>'+
+    '</div>';
+  document.body.appendChild(ov);
+  ov._photo=p.photo||"";
+}
+function closePartForm(){ var ov=document.getElementById("part-form-ov"); if(ov) ov.parentNode.removeChild(ov); }
+function previewPartPhoto(ev){
+  var file=ev.target.files&&ev.target.files[0]; if(!file) return;
+  if(file.size>3*1048576){ if(!confirm("Photo lourde ("+(file.size/1048576).toFixed(1)+" Mo). Continuer ?")){ ev.target.value=""; return; } }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var ov=document.getElementById("part-form-ov"); if(ov) ov._photo=e.target.result;
+    var pv=document.getElementById("pf-preview"); if(pv) pv.innerHTML='<img src="'+e.target.result+'" style="width:100px;height:100px;object-fit:cover;border-radius:8px;">';
+  };
+  reader.readAsDataURL(file);
+}
+function savePart(id){
+  var name=(document.getElementById("pf-name").value||"").trim();
+  if(!name){ toast("Entre le nom de la piece"); return; }
+  var ov=document.getElementById("part-form-ov");
+  var photo=ov?ov._photo||"":"";
+  var obj={
+    id:id||("p"+Date.now()+Math.floor(Math.random()*1000)),
+    name:name,
+    pn:(document.getElementById("pf-pn").value||"").trim(),
+    stock:(document.getElementById("pf-stock").value||"").trim(),
+    machine:document.getElementById("pf-machine").value||"",
+    system:document.getElementById("pf-system").value||"",
+    photo:photo
+  };
+  if(id){ for(var i=0;i<PARTS.length;i++){ if(PARTS[i].id===id){ PARTS[i]=obj; break; } } }
+  else { PARTS.push(obj); }
+  savePartsDB();
+  closePartForm();
+  renderParts();
+  toast(id?"Piece modifiee":"Piece ajoutee");
+}
+function editPart(id){ for(var i=0;i<PARTS.length;i++){ if(PARTS[i].id===id){ openPartForm(PARTS[i]); return; } } }
+function delPart(id){
+  if(!confirm("Supprimer cette piece ?")) return;
+  for(var i=0;i<PARTS.length;i++){ if(PARTS[i].id===id){ PARTS.splice(i,1); break; } }
+  savePartsDB(); renderParts(); toast("Piece supprimee");
+}
+function viewPartPhoto(id){
+  for(var i=0;i<PARTS.length;i++){ if(PARTS[i].id===id && PARTS[i].photo){
+    var w=window.open();
+    if(w) w.document.write('<html><head><title>'+escP(PARTS[i].name)+'</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#111;"><img src="'+PARTS[i].photo+'" style="width:100%;height:auto;"></body></html>');
+    return;
+  } }
+}
+
 function renderHist(){
   var b=document.getElementById("hist-body");
   // Rassemble toutes les pannes de tous les rapports, groupees par machine
