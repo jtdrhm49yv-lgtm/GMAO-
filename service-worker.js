@@ -1,10 +1,7 @@
 // Service Worker - Drilling GMAO
-// Strategie “cache d’abord” : l’app s’ouvre instantanement depuis le cache,
-// meme sans reseau. Le reseau sert seulement a mettre a jour en arriere-plan.
-// Changer le numero de version force le rafraichissement chez tout le monde.
-var CACHE_NAME = “gmao-cache-v6”;
+// Strategie robuste : navigation servie depuis le cache en priorite (hors-ligne fiable).
+var CACHE_NAME = “gmao-cache-v7”;
 
-// Fichiers essentiels (l’app doit pouvoir s’ouvrir entierement avec ceux-la)
 var CORE = [
 “./”,
 “./accueil.html”,
@@ -14,20 +11,16 @@ var CORE = [
 “./icon-192.png”,
 “./icon-512.png”
 ];
-// Fichier externe (jsPDF) - mis en cache si possible, mais non bloquant
 var EXTRA = [
 “https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js”,
 “https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js”,
 “https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js”
 ];
 
-// Installation : on met en cache les fichiers essentiels (de maniere fiable)
 self.addEventListener(“install”, function(event) {
 event.waitUntil(
 caches.open(CACHE_NAME).then(function(cache) {
-// les fichiers du coeur sont indispensables
 return cache.addAll(CORE).then(function(){
-// jsPDF : on essaie, mais on n’echoue pas si le reseau coupe
 return Promise.all(EXTRA.map(function(url){
 return cache.add(url).catch(function(){});
 }));
@@ -37,7 +30,6 @@ return cache.add(url).catch(function(){});
 self.skipWaiting();
 });
 
-// Activation : on supprime les anciens caches
 self.addEventListener(“activate”, function(event) {
 event.waitUntil(
 caches.keys().then(function(keys) {
@@ -48,43 +40,57 @@ if (key !== CACHE_NAME) return caches.delete(key);
 );
 });
 
-// Strategie “cache d’abord” :
-// 1) si le fichier est en cache -> on le sert TOUT DE SUITE (ouverture instantanee, meme hors-reseau)
-//    et on rafraichit le cache en arriere-plan si le reseau est dispo
-// 2) si pas en cache -> on va le chercher sur le reseau et on le met en cache
-// 3) si tout echoue et que c’est une navigation -> on renvoie l’accueil en cache
-self.addEventListener(“fetch”, function(event) {
-if (event.request.method !== “GET”) return;
-event.respondWith(
-caches.match(event.request, {ignoreSearch:true}).then(function(cached) {
-// mise a jour en arriere-plan (ne bloque pas la reponse)
-var networkFetch = fetch(event.request).then(function(response) {
-if (response && response.status === 200) {
-var copy = response.clone();
-caches.open(CACHE_NAME).then(function(cache) {
-cache.put(event.request, copy).catch(function(){});
+// Renvoie une page HTML du cache, quelle que soit l’URL exacte demandee
+function offlinePage(){
+return caches.open(CACHE_NAME).then(function(cache){
+return cache.match(”./accueil.html”, {ignoreSearch:true}).then(function(a){
+if(a) return a;
+return cache.match(”./index.html”, {ignoreSearch:true}).then(function(b){
+if(b) return b;
+return cache.match(”./”, {ignoreSearch:true});
+});
+});
 });
 }
-return response;
-}).catch(function(){ return null; });
 
-```
-  // si on a le fichier en cache, on le renvoie immediatement
-  if (cached) return cached;
+self.addEventListener(“fetch”, function(event) {
+var req = event.request;
+if (req.method !== “GET”) return;
 
-  // sinon on attend le reseau
-  return networkFetch.then(function(response) {
-    if (response) return response;
-    // dernier recours : pour une navigation, renvoyer l'accueil en cache
-    if (event.request.mode === "navigate") {
-      return caches.match("./accueil.html", {ignoreSearch:true}).then(function(acc){
-        return acc || caches.match("./index.html", {ignoreSearch:true});
-      });
-    }
-    return new Response("", {status: 503, statusText: "Hors-ligne"});
-  });
+// 1) NAVIGATION (ouverture d’une page) : cache d’abord, et si rien -> accueil en cache.
+//    C’est ce qui garantit l’ouverture hors-ligne depuis l’icone.
+if (req.mode === “navigate”) {
+event.respondWith(
+caches.match(req, {ignoreSearch:true}).then(function(cached){
+if (cached) return cached;
+return fetch(req).then(function(resp){
+if (resp && resp.status === 200) {
+var copy = resp.clone();
+caches.open(CACHE_NAME).then(function(c){ c.put(req, copy).catch(function(){}); });
+}
+return resp;
+}).catch(function(){
+// hors-ligne et URL non trouvee telle quelle -> on sert l’accueil en cache
+return offlinePage();
+});
 })
-```
+);
+return;
+}
 
+// 2) AUTRES FICHIERS (css/js/img/manifest) : cache d’abord, reseau en secours.
+event.respondWith(
+caches.match(req, {ignoreSearch:true}).then(function(cached){
+if (cached) return cached;
+return fetch(req).then(function(resp){
+if (resp && resp.status === 200) {
+var copy = resp.clone();
+caches.open(CACHE_NAME).then(function(c){ c.put(req, copy).catch(function(){}); });
+}
+return resp;
+}).catch(function(){
+return new Response(””, {status: 503, statusText: “Hors-ligne”});
+});
+})
 );
 });
