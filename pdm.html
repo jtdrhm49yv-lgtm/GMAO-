@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<!-- PDM VERSION 17 AUTO-REPARANTE -->
+<!-- PDM VERSION 18 AUTO-REPARANTE -->
 
 <html lang="en" translate="no" class="notranslate">
 <head>
@@ -127,6 +127,8 @@ window.addEventListener("load",function(){
 <script type="text/plain" id="pdmsrc">
 /* =================== DONNEES DE REFERENCE =================== */
 var ENGINE_MODELS = ["C11","C13","C18","QSX15","6BT","NTA","QSZ13"];
+// Parc de foreuses (modifiable) - utilise pour la liste deroulante
+var FLEET = ["DR215","DR216","DR217","DR218","DR219","DR220","DR221","DR222","DR223","DR224","DR225","DR226","DR227","DR228","DR229","DR230","DR231"];
 
 // Composants par defaut (modifiables par machine) + huile habituelle
 var DEFAULT_COMPONENTS = [
@@ -303,7 +305,16 @@ function renderAddMachine(){
   var h='<button class="back" onclick="go(\u0027home\u0027)">&#8592; Retour</button>';
   h+='<div class="page-title">Ajouter une <span>machine</span></div>';
   h+='<div class="card">';
-  h+='<div class="field"><label>Numero de machine</label><input id="nm-name" placeholder="ex: DR218"></div>';
+  var usedNames={};
+  for(var u=0;u<DB.machines.length;u++){ usedNames[DB.machines[u].name]=true; }
+  var fopts="";
+  for(var fi=0;fi<FLEET.length;fi++){
+    if(usedNames[FLEET[fi]]) continue; // ne pas reproposer une machine deja ajoutee
+    fopts+='<option value="'+FLEET[fi]+'">'+FLEET[fi]+'</option>';
+  }
+  fopts+='<option value="__autre__">Autre (saisir manuellement)</option>';
+  h+='<div class="field"><label>Machine</label><select id="nm-select" onchange="onMachineSelect()">'+fopts+'</select></div>';
+  h+='<div class="field" id="nm-other-wrap" style="display:none;"><label>Numero (saisie manuelle)</label><input id="nm-name" placeholder="ex: DR240"></div>';
   var opts="";
   for(var i=0;i<ENGINE_MODELS.length;i++){ opts+='<option>'+ENGINE_MODELS[i]+'</option>'; }
   h+='<div class="field"><label>Modele de moteur</label><select id="nm-model">'+opts+'</select></div>';
@@ -317,9 +328,22 @@ function renderAddMachine(){
   h+='<button class="btn btn-ghost" onclick="go(\u0027home\u0027)">Annuler</button>';
   return h;
 }
+function onMachineSelect(){
+  var sel=document.getElementById("nm-select");
+  var wrap=document.getElementById("nm-other-wrap");
+  if(sel&&wrap) wrap.style.display=(sel.value==="__autre__")?"block":"none";
+}
 function saveNewMachine(){
-  var name=(document.getElementById("nm-name").value||"").trim();
-  if(!name){ alert("Entre le numero de la machine (ex: DR218)"); return; }
+  var sel=document.getElementById("nm-select");
+  var name="";
+  if(sel&&sel.value==="__autre__"){
+    var inp=document.getElementById("nm-name");
+    name=(inp?inp.value:"").trim();
+  } else if(sel){
+    name=sel.value;
+  }
+  if(!name){ alert("Choisis une machine dans la liste (ou saisis son numero)"); return; }
+  for(var ex=0;ex<DB.machines.length;ex++){ if(DB.machines[ex].name===name){ alert("Cette machine existe deja."); return; } }
   var model=document.getElementById("nm-model").value;
   var checks=document.querySelectorAll('#nm-comps input[type=checkbox]');
   var comps=[];
