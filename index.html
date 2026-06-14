@@ -74,7 +74,7 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 <div class="topbar">
   <div class="tb-logo">&#9881;</div>
   <div style="flex:1;">
-    <div class="tb-name">ENDEAVOUR MINING</div>
+    <div class="tb-name">MAINTENANCE</div>
     <div class="tb-sub" id="sub">Drilling GMAO</div>
   </div>
   <a href="./accueil.html" style="text-decoration:none;color:var(--amber);font-size:15px;font-weight:700;padding:8px 12px;border:1px solid var(--border2);border-radius:10px;white-space:nowrap;" title="Retour accueil">&#8592; Accueil</a>
@@ -638,7 +638,7 @@ function genPanne(){
     '<tbody>'+tr+'</tbody></table>'+
     '<div style="font-size:12px;color:#3a2c12;"><b>Supervisor:</b> '+meta.sup+'</div>'+
     '<div style="font-size:12px;color:#3a2c12;margin-top:4px;"><b>Site Supervisor:</b> '+meta.site+'</div>'+
-    '<div style="text-align:center;margin-top:14px;font-size:16px;font-weight:800;letter-spacing:2px;color:#6e7a86;">ENDEAVOUR MINING</div>';
+    '<div style="text-align:center;margin-top:14px;font-size:16px;font-weight:800;letter-spacing:2px;color:#6e7a86;">MAINTENANCE</div>';
   document.getElementById("panne-out").style.display="block";
   document.getElementById("panne-out").scrollIntoView({behavior:"smooth"});
   toast("Rapport genere");
@@ -716,7 +716,7 @@ function genDaily(){
     '<td style="border:1px solid #9a8a64;padding:7px;">'+(r.type||"-")+'</td></tr>';
   }
   document.getElementById("doc-d").innerHTML=
-    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">ENDEAVOUR MINING</div>'+
+    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">MAINTENANCE</div>'+
     '<h2 style="text-align:center;font-size:15px;color:#2b3a4a;margin-bottom:10px;">Daily Drilling Maintenance Reporting</h2>'+
     '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>Location:</b> '+meta.loc+' &nbsp; <b>Date:</b> '+fmtDate(meta.date)+' &nbsp; <b>Shift:</b> '+meta.shift+'</div>'+
     '<table style="width:100%;border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;">'+
@@ -1172,7 +1172,7 @@ function genMDS(){
     rows+='<tr><td style="border:1px solid #9a8a64;padding:7px;background:#f7f0e0;font-weight:600;">'+d.label+'</td>'+valCell+'</tr>';
   }
   document.getElementById("doc-m").innerHTML=
-    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">ENDEAVOUR MINING</div>'+
+    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">MAINTENANCE</div>'+
     '<h2 style="text-align:center;font-size:14px;color:#2b3a4a;margin-bottom:10px;">MDS MAINTENANCE CREW DAILY COMPLIANCE</h2>'+
     '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>Date:</b> '+fmtDate(meta.date)+' &nbsp; <b>Shift:</b> '+meta.shift+'</div>'+
     '<table style="width:100%;border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;">'+
@@ -1346,7 +1346,7 @@ function genOil(){
     tr+='</tr>';
   }
   document.getElementById("doc-o").innerHTML=
-    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">ENDEAVOUR MINING</div>'+
+    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">MAINTENANCE</div>'+
     '<h2 style="text-align:center;font-size:15px;color:#2b3a4a;margin-bottom:10px;">'+(meta.shift==="Night"?"NIGHT":"DAY")+' SHIFT OIL REPORT</h2>'+
     '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>ST:</b> '+meta.st+' &nbsp; <b>Date:</b> '+fmtDate(meta.date)+'</div>'+
     '<div style="overflow-x:auto;"><table style="border-collapse:collapse;border:2px solid #6a5a3a;margin-bottom:12px;"><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+
@@ -1645,7 +1645,7 @@ function genWO(){
     '<div style="flex:1;text-align:center;background:rgba(34,201,122,0.12);border-radius:6px;padding:6px;"><div style="font-size:18px;font-weight:800;color:#1a7a4e;">'+nDone+'</div><div style="font-size:9px;color:#3a2c12;">TERMINE</div></div>'+
     '</div>';
   document.getElementById("doc-w").innerHTML=
-    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">ENDEAVOUR MINING</div>'+
+    '<div style="text-align:center;font-size:16px;font-weight:800;letter-spacing:2px;color:#2b3a4a;margin-bottom:4px;">MAINTENANCE</div>'+
     '<h2 style="text-align:center;font-size:15px;color:#2b3a4a;margin-bottom:10px;">WORK ORDER</h2>'+
     '<div style="font-size:12px;margin-bottom:10px;color:#3a2c12;"><b>Date:</b> '+fmtDate(meta.date)+' &nbsp; <b>Cree par:</b> '+meta.by+'</div>'+
     summary+
