@@ -2,7 +2,7 @@
 // Strategie “cache d’abord” : l’app s’ouvre instantanement depuis le cache,
 // meme sans reseau. Le reseau sert seulement a mettre a jour en arriere-plan.
 // Changer le numero de version force le rafraichissement chez tout le monde.
-var CACHE_NAME = “gmao-cache-v5”;
+var CACHE_NAME = “gmao-cache-v6”;
 
 // Fichiers essentiels (l’app doit pouvoir s’ouvrir entierement avec ceux-la)
 var CORE = [
@@ -10,7 +10,9 @@ var CORE = [
 “./accueil.html”,
 “./index.html”,
 “./pdm.html”,
-“./manifest.json”
+“./manifest.json”,
+“./icon-192.png”,
+“./icon-512.png”
 ];
 // Fichier externe (jsPDF) - mis en cache si possible, mais non bloquant
 var EXTRA = [
