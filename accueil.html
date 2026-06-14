@@ -80,7 +80,7 @@ if("serviceWorker" in navigator){
 if("caches" in window){
   window.addEventListener("load",function(){
     setTimeout(function(){
-      caches.open("gmao-cache-v6").then(function(cache){
+      caches.open("gmao-cache-v7").then(function(cache){
         return cache.addAll(["./","./accueil.html","./index.html","./pdm.html","./manifest.json"]);
       }).then(function(){ checkOfflineReady(); }).catch(function(){ checkOfflineReady(); });
     },1500);
@@ -88,7 +88,7 @@ if("caches" in window){
 }
 function checkOfflineReady(){
   if(!("caches" in window)) return;
-  caches.open("gmao-cache-v6").then(function(cache){
+  caches.open("gmao-cache-v7").then(function(cache){
     return Promise.all([cache.match("./accueil.html"),cache.match("./index.html"),cache.match("./pdm.html")]);
   }).then(function(r){
     var ok=r[0]&&r[1]&&r[2];
