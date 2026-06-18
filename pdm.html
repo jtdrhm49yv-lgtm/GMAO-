@@ -81,6 +81,10 @@ td.lbl{text-align:left;color:var(--text2);font-weight:600;}
 </style>
 </head>
 <body translate="no" class="notranslate">
+<script>
+// Garde-barriere GMAO : si pas deverrouille, retour a l'accueil
+(function(){ try{ if(localStorage.getItem("gmao_unlocked_v1")!=="1"){ location.replace("./accueil.html"); } }catch(e){} })();
+</script>
 
 <div class="top">
   <div class="logo">&#128202;</div>
@@ -128,7 +132,7 @@ window.addEventListener("load",function(){
 /* =================== DONNEES DE REFERENCE =================== */
 var ENGINE_MODELS = ["C11","C13","C18","QSX15","6BT","NTA","QSZ13"];
 // Parc de foreuses (modifiable) - utilise pour la liste deroulante
-var FLEET = ["DR215","DR216","DR217","DR218","DR219","DR220","DR221","DR222","DR223","DR224","DR225","DR226","DR227","DR228","DR229","DR230","DR231"];
+var FLEET = ["Machine 1","Machine 2","Machine 3","Machine 4","Machine 5","Machine 6","Machine 7","Machine 8","Machine 9","Machine 10","Machine 11","Machine 12","Machine 13","Machine 14","Machine 15","Machine 16","Machine 17"];
 
 // Composants par defaut (modifiables par machine) + huile habituelle
 var DEFAULT_COMPONENTS = [
@@ -314,7 +318,7 @@ function renderAddMachine(){
   }
   fopts+='<option value="__autre__">Autre (saisir manuellement)</option>';
   h+='<div class="field"><label>Machine</label><select id="nm-select" onchange="onMachineSelect()">'+fopts+'</select></div>';
-  h+='<div class="field" id="nm-other-wrap" style="display:none;"><label>Numero (saisie manuelle)</label><input id="nm-name" placeholder="ex: DR240"></div>';
+  h+='<div class="field" id="nm-other-wrap" style="display:none;"><label>Numero (saisie manuelle)</label><input id="nm-name" placeholder="ex: Machine 18"></div>';
   var opts="";
   for(var i=0;i<ENGINE_MODELS.length;i++){ opts+='<option>'+ENGINE_MODELS[i]+'</option>'; }
   h+='<div class="field"><label>Modele de moteur</label><select id="nm-model">'+opts+'</select></div>';
