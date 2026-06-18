@@ -70,6 +70,10 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
 </style>
 </head>
 <body translate="no" class="notranslate">
+<script>
+// Garde-barriere GMAO : si pas deverrouille, retour a l'accueil
+(function(){ try{ if(localStorage.getItem("gmao_unlocked_v1")!=="1"){ location.replace("./accueil.html"); } }catch(e){} })();
+</script>
 
 <div class="topbar">
   <div class="tb-logo">&#9881;</div>
@@ -91,9 +95,9 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
       <div class="card-body">
         <div class="field"><label>Shift</label><select id="p-shift"><option>Night</option><option>Day</option></select></div>
         <div class="field"><label>Date</label><input type="date" id="p-date"></div>
-        <div class="field"><label>Leading Hand</label><input type="text" id="p-lead" placeholder="ex: Gora Fall"></div>
-        <div class="field"><label>Supervisor</label><input type="text" id="p-sup" placeholder="ex: Mory Danfakha"></div>
-        <div class="field"><label>Site Supervisor</label><input type="text" id="p-site" placeholder="ex: Samba Ngom"></div>
+        <div class="field"><label>Leading Hand</label><input type="text" id="p-lead" placeholder="ex: Nom Prenom"></div>
+        <div class="field"><label>Supervisor</label><input type="text" id="p-sup" placeholder="ex: Nom Prenom"></div>
+        <div class="field"><label>Site Supervisor</label><input type="text" id="p-site" placeholder="ex: Nom Prenom"></div>
       </div>
     </div>
     <div class="card">
@@ -127,8 +131,8 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
         <div class="field"><label>Date</label><input type="date" id="d-date"></div>
         <div class="field"><label>Location</label><input type="text" id="d-loc" placeholder="ex: Pit 3"></div>
         <div class="field"><label>Shift</label><select id="d-shift"><option>Day</option><option>Night</option></select></div>
-        <div class="field"><label>Daily Service Leading Hand</label><input type="text" id="d-lead" placeholder="ex: Gora Fall"></div>
-        <div class="field"><label>Pit Maint Forman</label><input type="text" id="d-forman" placeholder="ex: Mory Danfakha"></div>
+        <div class="field"><label>Daily Service Leading Hand</label><input type="text" id="d-lead" placeholder="ex: Nom Prenom"></div>
+        <div class="field"><label>Pit Maint Forman</label><input type="text" id="d-forman" placeholder="ex: Nom Prenom"></div>
       </div>
     </div>
     <div class="card">
@@ -248,7 +252,7 @@ input[type="time"],input[type="date"]{color-scheme:dark;}
       <div class="card-head"><div class="card-title">Informations</div></div>
       <div class="card-body">
         <div class="field"><label>Date</label><input type="date" id="wo-date"></div>
-        <div class="field"><label>Cree par</label><input type="text" id="wo-by" placeholder="ex: Gora Fall"></div>
+        <div class="field"><label>Cree par</label><input type="text" id="wo-by" placeholder="ex: Nom Prenom"></div>
       </div>
     </div>
     <div class="card">
@@ -319,6 +323,7 @@ var OIL_COMP = ["Eng","Comp","G/Box","Hyd/T","W/H TD","F/FD","R/Bead","Coolant",
 var OIL_NAMES = ["Technicien 1","Technicien 2","Technicien 3","Technicien 4","Technicien 5","Technicien 6"];
 var OIL_SUPS = ["Superviseur 1","Superviseur 2","Superviseur 3","Superviseur 4","Superviseur 5"];
 var TECHS = ["Technicien 1","Technicien 2","Technicien 3","Technicien 4","Technicien 5","Technicien 6","Technicien 7","Technicien 8","Technicien 9","Technicien 10"];
+
 var DB;
 try { DB = JSON.parse(localStorage.getItem("gmao_v3") || "[]"); if(!Array.isArray(DB)) DB = []; } catch(e){ DB = []; }
 function saveDB(){ try{ localStorage.setItem("gmao_v3", JSON.stringify(DB)); }catch(e){ toast("Memoire pleine - le rapport marche mais ne sera pas garde dans l historique"); } }
